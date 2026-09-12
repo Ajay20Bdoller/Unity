@@ -36,6 +36,18 @@ cp .env.local.example .env.local   # set NEXT_PUBLIC_API_URL
 npm run dev
 ```
 
+## Testing
+
+```bash
+cd backend && pip install -r requirements-dev.txt && pytest
+cd frontend && npx tsc --noEmit && npm run lint
+```
+
+## Conventions & roadmap
+
+See [`CLAUDE.md`](./CLAUDE.md) for architecture rules, coding conventions,
+security/database rules, and the full phased build plan.
+
 ## Status (Phase 1 — Foundation)
 
 - [x] JWT auth: register / login / logout / me
