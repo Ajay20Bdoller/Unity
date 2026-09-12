@@ -240,39 +240,60 @@ tokens; roles STUDENT/PARENT/MENTOR/SCHOOL_ADMIN/ADMIN with admin
 self-registration blocked; identity/role-profile split; `languages`
 table (seeded) with a real FK from `users`; `states`/`districts`/
 `schools` location tables (schema only); `require_*` role dependencies;
-student onboarding (`GET`/`PATCH /students/me`, with FK-existence
-validation for school/state/district); guardian relationships
-(student-initiated via `POST /students/me/guardians`, parent-verified
-via `POST /parents/me/guardians/{id}/verify`, or rejected); per-feature
-consent (`consent_records`, dev-mode OTP request/verify, `MENTORSHIP`
-and `DATA_SHARING` types) gated separately from relationship
-verification. Next.js patched for CVE-2025-66478, `bcrypt` pinned.
+student onboarding; guardian relationships (student-initiated,
+parent-verified); per-feature consent (dev-mode OTP, gated separately
+from relationship verification); dashboard config backend
+(`dashboard_sections` + `role_dashboard_sections`, admin CRUD, resolved
+per-user list via `GET /dashboard/sections`, seeded with `welcome` +
+`ai_assistant` for all 5 roles); AI Career Assistant (`POST /ai/chat`,
+provider-agnostic `AIService` + `GrokProvider`, in-memory rate limiter,
+friendly-error handling that never leaks internal reasons or the API
+key). Next.js patched for CVE-2025-66478, `bcrypt` pinned.
 
-Verified end-to-end against a real Postgres instance across two
-migrations (`0002`, `0003`, both upgrade/downgrade/upgrade-tested):
-full auth lifecycle, all 5 role dependencies, student onboarding incl.
-bad-FK rejection, guardian invite/duplicate/not-found/verify/reject,
-consent request-before-verified rejection, OTP wrong/correct/reused
-rejection-after-grant. 23/23 pytest (unit-level: security, deps, OTP
-helpers, model metadata — no live-DB test suite yet, see gaps below).
+This closes the product's first success criterion end-to-end at the API
+level: register → login → `GET /dashboard/sections` → `POST /ai/chat`.
+**Not yet true end-to-end** — the frontend doesn't call any of this
+(§20 gaps) and no real `GROK_API_KEY` has been supplied (asked for, not
+invented, per doc-22 instructions — verified locally that a missing key
+fails gracefully with a 503, not a crash).
+
+Verified end-to-end against a real Postgres instance across four
+migrations (`0001`-`0004`, each upgrade/downgrade/upgrade-tested, full
+chain also verified from scratch): the complete auth lifecycle, all 5
+role dependencies, student onboarding incl. bad-FK rejection, guardian
+invite/duplicate/not-found/verify/reject, consent request/OTP
+wrong/correct/reused, dashboard sections resolving correctly per role,
+and `/ai/chat` — unauthenticated rejected, missing-key handled
+gracefully, empty/oversized message rejected. 38/38 pytest (unit-level
++ `TestClient`-based endpoint tests with dependency overrides for `/ai/
+chat`, covering every one of doc-22's required test cases with a fake
+provider — no real paid Grok requests).
 
 **Known gaps to close early (foundational, not feature work):**
-- Frontend doesn't yet call `/auth/refresh` on a 401 — access tokens
-  are short (15 min), so this needs wiring before it's usable end to end.
-- Backend endpoint-level integration tests (need a test-DB story) —
-  current coverage is unit-level only; the flows above were verified
-  manually (curl), not via an automated live-DB suite.
+- Frontend doesn't yet call `/auth/refresh` on a 401, doesn't render
+  `GET /dashboard/sections` via a section registry, and has no AI chat
+  UI at all — the backend above is unused from the browser today.
+- No real `GROK_API_KEY` yet — ask the project owner for it; never
+  invent one. Everything is built and tested against a fake provider in
+  the meantime.
+- Backend endpoint-level integration tests against a *live DB* still
+  don't exist as an automated suite (the flows above were verified
+  manually via curl) — the `/ai/chat` tests are the one exception,
+  since that endpoint has no DB dependency at all.
 - Frontend test framework decision.
 - `states`/`districts`/`schools` have no data yet — need the seed/import
   mechanism (explicitly: no giant hardcoded dataset in source).
 - OTP delivery is dev-mode only (echoed in the API response) — a real
   SMS provider is required before production.
+- In-memory AI rate limiter is single-process only (documented in
+  `app/services/ai/rate_limit.py`) — fine for MVP, needs a Redis-backed
+  swap before running more than one server instance.
 
 **Remaining feature phases (roughly in order):**
-1. Dashboard shell + `dashboard_sections`/`role_dashboard_sections` +
-   AI Career Assistant MVP (Grok, backend-only, safety/cost controls).
-   This alone satisfies the product's first success criterion (register
-   → login → dashboard → ask the assistant → get an answer).
+1. Wire the frontend to everything above: refresh-on-401, a real
+   section registry rendering `GET /dashboard/sections`, and an "Ask
+   Career AI" dashboard card calling `POST /ai/chat`. This is what turns
+   "verified via curl" into an actual usable product.
 2. Location seed data (states/districts/schools import mechanism).
 3. Career library (categories, careers, translations, related careers,
    student interests).

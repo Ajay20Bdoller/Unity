@@ -19,9 +19,12 @@ class Settings(BaseSettings):
 
     GROK_API_KEY: str = ""
     GROK_MODEL: str = "grok-beta"
+    GROK_BASE_URL: str = "https://api.x.ai/v1"
     AI_MAX_TOKENS: int = 500
     AI_TEMPERATURE: float = 0.4
     AI_REQUEST_TIMEOUT: int = 20
+    AI_MAX_MESSAGE_LENGTH: int = 2000
+    AI_RATE_LIMIT_PER_MINUTE: int = 10
 
     CORS_ORIGINS: str = "http://localhost:3000"
 

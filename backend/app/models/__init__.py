@@ -1,4 +1,5 @@
 from app.models.consent import ConsentRecord, ConsentStatus, ConsentType  # noqa: F401
+from app.models.dashboard import DashboardSection, RoleDashboardSection  # noqa: F401
 from app.models.guardian import GuardianRelationship, GuardianRelationshipStatus  # noqa: F401
 from app.models.language import Language  # noqa: F401
 from app.models.location import District, School, State  # noqa: F401
