@@ -8,9 +8,32 @@ export class ApiError extends Error {
   }
 }
 
+// Access tokens are short-lived (15 min). Rather than making every
+// caller think about expiry, a 401 triggers one silent refresh attempt
+// (via the httpOnly refresh_token cookie) and a single retry. If refresh
+// also fails, the error surfaces normally and callers redirect to login
+// as before. Concurrent 401s share one in-flight refresh call.
+let refreshInFlight: Promise<boolean> | null = null;
+
+function attemptRefresh(): Promise<boolean> {
+  if (!refreshInFlight) {
+    refreshInFlight = fetch(`${API_URL}/auth/refresh`, {
+      method: "POST",
+      credentials: "include",
+    })
+      .then((res) => res.ok)
+      .catch(() => false)
+      .finally(() => {
+        refreshInFlight = null;
+      });
+  }
+  return refreshInFlight;
+}
+
 async function request<T>(
   path: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  _isRetry = false
 ): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
@@ -20,6 +43,13 @@ async function request<T>(
       ...options.headers,
     },
   });
+
+  if (res.status === 401 && !_isRetry && path !== "/auth/refresh" && path !== "/auth/login") {
+    const refreshed = await attemptRefresh();
+    if (refreshed) {
+      return request<T>(path, options, true);
+    }
+  }
 
   if (!res.ok) {
     let detail = res.statusText;
@@ -38,7 +68,7 @@ async function request<T>(
   return res.json() as Promise<T>;
 }
 
-export type UserRole = "student" | "parent" | "mentor" | "school" | "admin";
+export type UserRole = "student" | "parent" | "mentor" | "school_admin" | "admin";
 
 export interface User {
   id: string;
@@ -57,6 +87,23 @@ export interface RegisterInput {
   role: UserRole;
 }
 
+export interface DashboardSection {
+  key: string;
+  component_key: string;
+  name: string;
+  config: Record<string, unknown>;
+}
+
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface AIChatResponse {
+  answer: string;
+  provider: string;
+}
+
 export const api = {
   register: (input: RegisterInput) =>
     request<User>("/auth/register", {
@@ -70,4 +117,15 @@ export const api = {
     }),
   logout: () => request<void>("/auth/logout", { method: "POST" }),
   me: () => request<User>("/auth/me"),
+  updateLanguage: (preferred_language: string) =>
+    request<User>("/users/me/language", {
+      method: "PATCH",
+      body: JSON.stringify({ preferred_language }),
+    }),
+  dashboardSections: () => request<DashboardSection[]>("/dashboard/sections"),
+  aiChat: (message: string, history?: ChatMessage[]) =>
+    request<AIChatResponse>("/ai/chat", {
+      method: "POST",
+      body: JSON.stringify({ message, history }),
+    }),
 };

@@ -50,18 +50,20 @@ security/database rules, and the full phased build plan.
 
 ## Status
 
-- [x] JWT auth: register / login / refresh (rotating, revocable) /
-      logout / me
+- [x] JWT auth: register / login / refresh (rotating, revocable,
+      frontend auto-retries on 401) / logout / me
 - [x] Roles: STUDENT, PARENT, MENTOR, SCHOOL_ADMIN, ADMIN (ADMIN not
       self-registerable) with `require_*` authorization dependencies
 - [x] Identity/role-profile split: `users` + `students`/`parents`/
       `mentors`/`school_admin_profiles`
 - [x] `languages` table (seeded) + `PATCH /users/me/language`
 - [x] `states`/`districts`/`schools` tables (schema only, no data yet)
-- [x] Next.js skeleton with login/register/dashboard wired to the API
-- [ ] Frontend refresh-on-401 wiring
-- [ ] AI Career Assistant
-- [ ] Onboarding, guardian/consent, career library, courses, assessment,
-      campaigns, mentorship, announcements, admin APIs
+- [x] Student onboarding, guardian relationships, per-feature consent
+      (dev-mode OTP)
+- [x] Dashboard config backend + registry-driven frontend rendering
+- [x] AI Career Assistant (backend + dashboard card) — needs a real
+      `GROK_API_KEY` to actually answer (see CLAUDE.md §11)
+- [ ] Career library, courses, assessment, campaigns, mentorship,
+      announcements, admin APIs/UI, i18n
 
 See [`CLAUDE.md`](./CLAUDE.md) §11 for the full phased plan.

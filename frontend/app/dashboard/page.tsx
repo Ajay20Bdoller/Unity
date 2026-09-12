@@ -1,19 +1,25 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { api, ApiError, type DashboardSection } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-
-const roleLabels: Record<string, string> = {
-  student: "Student",
-  parent: "Parent / Guardian",
-  mentor: "Mentor",
-  school: "School / Institution",
-  admin: "Admin",
-};
+import { SECTION_REGISTRY } from "@/components/dashboard/section-registry";
 
 export default function DashboardPage() {
   const { user, loading, logout } = useAuth();
+  const [sections, setSections] = useState<DashboardSection[] | null>(null);
+  const [sectionsError, setSectionsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    api
+      .dashboardSections()
+      .then(setSections)
+      .catch((err) => {
+        setSectionsError(err instanceof ApiError ? err.message : "Couldn't load your dashboard.");
+      });
+  }, [user]);
 
   if (loading) {
     return (
@@ -26,37 +32,31 @@ export default function DashboardPage() {
   if (!user) {
     return (
       <main className="flex min-h-screen items-center justify-center">
-        <p className="text-sm text-muted">
-          Session expired. Please log in again.
-        </p>
+        <p className="text-sm text-muted">Session expired. Please log in again.</p>
       </main>
     );
   }
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-12">
-      <header className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-muted">
-            {roleLabels[user.role] ?? user.role}
-          </p>
-          <h1 className="text-2xl font-semibold text-ink">
-            Welcome, {user.full_name}
-          </h1>
-        </div>
+      <header className="flex items-center justify-end">
         <Button variant="secondary" onClick={logout}>
           Log out
         </Button>
       </header>
 
-      <Card className="mt-10">
-        <h2 className="font-medium text-ink">Your dashboard is being built</h2>
-        <p className="mt-2 text-sm text-muted">
-          This is the foundation phase — auth, roles, and profiles are live.
-          The AI Career Assistant and your personalised sections land in the
-          next build phase.
-        </p>
-      </Card>
+      <div className="mt-6 space-y-6">
+        {sectionsError && <p className="text-sm text-danger">{sectionsError}</p>}
+        {sections?.map((section) => {
+          const SectionComponent = SECTION_REGISTRY[section.component_key];
+          // Unknown component_key -> skip it silently. The DB can only
+          // pick from known components, never inject new ones; a key
+          // that doesn't match anything here must fail safe, not crash
+          // the dashboard.
+          if (!SectionComponent) return null;
+          return <SectionComponent key={section.key} />;
+        })}
+      </div>
     </main>
   );
 }

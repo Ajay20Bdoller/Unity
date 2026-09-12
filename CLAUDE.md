@@ -104,8 +104,9 @@ the access token server-side (see `require_*` deps in §4).
 - Tailwind tokens (`ink`, `muted`, `border`, `primary`, `accent`,
   `danger`) are defined in `tailwind.config.ts` — use them instead of
   raw hex/gray-scale classes so the palette stays centralized.
-- The frontend API client does not yet call `/auth/refresh` on a 401 —
-  that's still open (see §11).
+- The frontend API client calls `/auth/refresh` automatically on a 401
+  and retries once (`frontend/lib/api.ts` — verified against the real
+  backend, including the exact retry control flow, not just unit-level).
 
 ## 5. Security rules
 
@@ -250,32 +251,37 @@ provider-agnostic `AIService` + `GrokProvider`, in-memory rate limiter,
 friendly-error handling that never leaks internal reasons or the API
 key). Next.js patched for CVE-2025-66478, `bcrypt` pinned.
 
-This closes the product's first success criterion end-to-end at the API
-level: register → login → `GET /dashboard/sections` → `POST /ai/chat`.
-**Not yet true end-to-end** — the frontend doesn't call any of this
-(§20 gaps) and no real `GROK_API_KEY` has been supplied (asked for, not
-invented, per doc-22 instructions — verified locally that a missing key
-fails gracefully with a 503, not a crash).
+This closes the product's first success criterion **end-to-end,
+including the frontend**: register → login → dashboard (renders
+`welcome_summary` + `ai_assistant_card` via a fixed section registry,
+`frontend/components/dashboard/section-registry.tsx`) → ask the AI
+assistant. The one missing piece is a real `GROK_API_KEY` (asked for,
+not invented, per doc-22 instructions — verified locally that a missing
+key fails gracefully with a friendly error in the UI, not a crash).
 
 Verified end-to-end against a real Postgres instance across four
 migrations (`0001`-`0004`, each upgrade/downgrade/upgrade-tested, full
-chain also verified from scratch): the complete auth lifecycle, all 5
-role dependencies, student onboarding incl. bad-FK rejection, guardian
-invite/duplicate/not-found/verify/reject, consent request/OTP
-wrong/correct/reused, dashboard sections resolving correctly per role,
-and `/ai/chat` — unauthenticated rejected, missing-key handled
-gracefully, empty/oversized message rejected. 38/38 pytest (unit-level
-+ `TestClient`-based endpoint tests with dependency overrides for `/ai/
-chat`, covering every one of doc-22's required test cases with a fake
-provider — no real paid Grok requests).
+chain also verified from scratch): the complete auth lifecycle
+(including the frontend's refresh-on-401 retry logic, verified with a
+Node script replicating `lib/api.ts`'s exact control flow against the
+live backend — not just a unit test), all 5 role dependencies, student
+onboarding incl. bad-FK rejection, guardian invite/duplicate/not-found/
+verify/reject, consent request/OTP wrong/correct/reused, dashboard
+sections resolving correctly per role and rendering through the
+registry, and `/ai/chat` end to end (unauthenticated rejected,
+missing-key handled gracefully, empty/oversized message rejected).
+38/38 backend pytest, frontend `tsc`/lint clean.
 
 **Known gaps to close early (foundational, not feature work):**
-- Frontend doesn't yet call `/auth/refresh` on a 401, doesn't render
-  `GET /dashboard/sections` via a section registry, and has no AI chat
-  UI at all — the backend above is unused from the browser today.
 - No real `GROK_API_KEY` yet — ask the project owner for it; never
   invent one. Everything is built and tested against a fake provider in
-  the meantime.
+  the meantime. (A `gsk_...`-format key was shared once — that prefix is
+  Groq's, not xAI's Grok; easy mix-up given the near-identical names.
+  Groq's API is also OpenAI-compatible at `https://api.groq.com/openai/v1`
+  with model IDs like `llama-3.3-70b-versatile`, so the existing
+  `GrokProvider` code works unchanged for it — only `GROK_BASE_URL` and
+  `GROK_MODEL` need to point at Groq instead. Confirm which provider is
+  actually intended before wiring a real key into `.env`.)
 - Backend endpoint-level integration tests against a *live DB* still
   don't exist as an automated suite (the flows above were verified
   manually via curl) — the `/ai/chat` tests are the one exception,
@@ -290,21 +296,19 @@ provider — no real paid Grok requests).
   swap before running more than one server instance.
 
 **Remaining feature phases (roughly in order):**
-1. Wire the frontend to everything above: refresh-on-401, a real
-   section registry rendering `GET /dashboard/sections`, and an "Ask
-   Career AI" dashboard card calling `POST /ai/chat`. This is what turns
-   "verified via curl" into an actual usable product.
-2. Location seed data (states/districts/schools import mechanism).
-3. Career library (categories, careers, translations, related careers,
+1. Location seed data (states/districts/schools import mechanism).
+2. Career library (categories, careers, translations, related careers,
    student interests).
-4. Courses + modules + lessons + enrollment + progress.
-5. Career assessment (rule-based scoring, not AI, ~10-15 seed questions).
-6. Campaigns + registration/source tracking.
-7. Mentorship foundation (profile, languages, expertise, availability,
+3. Courses + modules + lessons + enrollment + progress.
+4. Career assessment (rule-based scoring, not AI, ~10-15 seed questions).
+5. Campaigns + registration/source tracking.
+6. Mentorship foundation (profile, languages, expertise, availability,
    manual/admin matching — no open chat; gate on `has_active_consent`).
-8. Announcements, admin APIs for everything above, comprehensive backend
-   test suite, then the full frontend (routes for all 5 roles + i18n),
-   then a full end-to-end verification pass.
+7. Announcements, admin APIs for everything above, comprehensive backend
+   test suite, then the rest of the frontend (student onboarding UI,
+   career exploration, assessment UI, courses, mentorship, parent UI,
+   admin UI, i18n for all 5 languages), then a full end-to-end
+   verification pass.
 
 ## 12. Environment
 

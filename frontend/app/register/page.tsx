@@ -13,7 +13,7 @@ const roles: { value: UserRole; label: string }[] = [
   { value: "student", label: "Student" },
   { value: "parent", label: "Parent / Guardian" },
   { value: "mentor", label: "Mentor" },
-  { value: "school", label: "School / Institution" },
+  { value: "school_admin", label: "School / Institution" },
 ];
 
 export default function RegisterPage() {
