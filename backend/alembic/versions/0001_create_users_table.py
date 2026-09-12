@@ -28,7 +28,7 @@ def upgrade() -> None:
         sa.Column("email", sa.String(length=255), nullable=False, unique=True),
         sa.Column("hashed_password", sa.String(length=255), nullable=False),
         sa.Column("full_name", sa.String(length=255), nullable=False),
-        sa.Column("role", user_role_enum, nullable=False, server_default="student"),
+        sa.Column("role", postgresql.ENUM("student","parent","mentor","school","admin", name="user_role", create_type=False), nullable=False, server_default="student"),
         sa.Column("is_active", sa.Boolean(), nullable=False, server_default=sa.true()),
         sa.Column("preferred_language", sa.String(length=10), nullable=False, server_default="en"),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
