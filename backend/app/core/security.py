@@ -1,3 +1,5 @@
+import hashlib
+import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -35,3 +37,20 @@ def decode_access_token(token: str) -> dict[str, Any] | None:
         )
     except JWTError:
         return None
+
+
+def generate_refresh_token() -> str:
+    """A high-entropy opaque token — not a JWT. Nothing meaningful is
+    encoded in it, so there's nothing to leak if it's logged by mistake
+    beyond the token itself."""
+    return secrets.token_urlsafe(48)
+
+
+def hash_refresh_token(raw_token: str) -> str:
+    """Refresh tokens are stored as a SHA-256 hash, never in plaintext —
+    matches how the password hash is never reversible either."""
+    return hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
+
+
+def refresh_token_expiry() -> datetime:
+    return datetime.now(timezone.utc) + timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS)

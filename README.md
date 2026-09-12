@@ -48,13 +48,20 @@ cd frontend && npx tsc --noEmit && npm run lint
 See [`CLAUDE.md`](./CLAUDE.md) for architecture rules, coding conventions,
 security/database rules, and the full phased build plan.
 
-## Status (Phase 1 — Foundation)
+## Status
 
-- [x] JWT auth: register / login / logout / me
-- [x] User model with 5 roles (student, parent, mentor, school, admin)
-- [x] Alembic migration for `users` table
+- [x] JWT auth: register / login / refresh (rotating, revocable) /
+      logout / me
+- [x] Roles: STUDENT, PARENT, MENTOR, SCHOOL_ADMIN, ADMIN (ADMIN not
+      self-registerable) with `require_*` authorization dependencies
+- [x] Identity/role-profile split: `users` + `students`/`parents`/
+      `mentors`/`school_admin_profiles`
+- [x] `languages` table (seeded) + `PATCH /users/me/language`
+- [x] `states`/`districts`/`schools` tables (schema only, no data yet)
 - [x] Next.js skeleton with login/register/dashboard wired to the API
-- [ ] AI Career Assistant (Phase 2)
-- [ ] Onboarding, career library, assessment (Phase 3+)
+- [ ] Frontend refresh-on-401 wiring
+- [ ] AI Career Assistant
+- [ ] Onboarding, guardian/consent, career library, courses, assessment,
+      campaigns, mentorship, announcements, admin APIs
 
-See project roadmap for the full phased plan.
+See [`CLAUDE.md`](./CLAUDE.md) §11 for the full phased plan.

@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Enum, String, func
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -13,8 +13,19 @@ class UserRole(str, enum.Enum):
     STUDENT = "student"
     PARENT = "parent"
     MENTOR = "mentor"
-    SCHOOL = "school"
+    SCHOOL_ADMIN = "school_admin"
     ADMIN = "admin"
+
+
+# Roles a person can pick for themselves at /auth/register. ADMIN is
+# deliberately excluded — admin accounts are provisioned separately
+# (seed script / an existing admin), never via open self-registration.
+SELF_REGISTERABLE_ROLES = (
+    UserRole.STUDENT,
+    UserRole.PARENT,
+    UserRole.MENTOR,
+    UserRole.SCHOOL_ADMIN,
+)
 
 
 class User(Base):
@@ -32,7 +43,9 @@ class User(Base):
         default=UserRole.STUDENT,
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    preferred_language: Mapped[str] = mapped_column(String(10), default="en", nullable=False)
+    preferred_language: Mapped[str] = mapped_column(
+        String(10), ForeignKey("languages.code"), default="en", nullable=False
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

@@ -5,7 +5,7 @@ from sqlalchemy import engine_from_config, pool
 
 from app.core.config import get_settings
 from app.db.session import Base
-from app.models import User  # noqa: F401  (ensures model metadata is registered)
+import app.models  # noqa: F401  (ensures all model metadata is registered)
 
 config = context.config
 settings = get_settings()

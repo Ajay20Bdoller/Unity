@@ -1,7 +1,12 @@
+from datetime import datetime, timezone
+
 from app.core.security import (
     create_access_token,
     decode_access_token,
+    generate_refresh_token,
     hash_password,
+    hash_refresh_token,
+    refresh_token_expiry,
     verify_password,
 )
 
@@ -40,3 +45,21 @@ def test_access_token_roundtrip():
 
 def test_decode_access_token_rejects_garbage():
     assert decode_access_token("not-a-real-token") is None
+
+
+def test_refresh_token_is_high_entropy_and_unique():
+    a, b = generate_refresh_token(), generate_refresh_token()
+    assert a != b
+    assert len(a) > 40  # secrets.token_urlsafe(48) — plenty of entropy
+
+
+def test_refresh_token_hash_is_deterministic_and_not_reversible():
+    raw = generate_refresh_token()
+    h1, h2 = hash_refresh_token(raw), hash_refresh_token(raw)
+    assert h1 == h2  # same input -> same hash, needed to look it up in the DB
+    assert h1 != raw
+    assert len(h1) == 64  # sha256 hex digest
+
+
+def test_refresh_token_expiry_is_in_the_future():
+    assert refresh_token_expiry() > datetime.now(timezone.utc)

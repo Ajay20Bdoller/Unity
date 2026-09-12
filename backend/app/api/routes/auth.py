@@ -1,22 +1,98 @@
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from datetime import datetime, timezone
+
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.core.config import get_settings
-from app.core.security import create_access_token, hash_password, verify_password
+from app.core.security import (
+    create_access_token,
+    generate_refresh_token,
+    hash_password,
+    hash_refresh_token,
+    refresh_token_expiry,
+    verify_password,
+)
 from app.db.session import get_db
-from app.models.user import User
+from app.models.profiles import (
+    MentorProfile,
+    ParentProfile,
+    SchoolAdminProfile,
+    StudentProfile,
+)
+from app.models.refresh_token import RefreshToken
+from app.models.user import SELF_REGISTERABLE_ROLES, User, UserRole
 from app.schemas.auth import LoginRequest, Token
 from app.schemas.user import UserCreate, UserRead
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 settings = get_settings()
 
-COOKIE_MAX_AGE = settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60
+ACCESS_COOKIE_MAX_AGE = settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60
+REFRESH_COOKIE_MAX_AGE = settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
+
+# One empty profile-row type per self-registerable role, created alongside
+# the user so "identity" and "role-specific profile" are separate from the
+# moment an account exists, never bolted on later as an afterthought.
+_PROFILE_MODEL_BY_ROLE = {
+    UserRole.STUDENT: StudentProfile,
+    UserRole.PARENT: ParentProfile,
+    UserRole.MENTOR: MentorProfile,
+    UserRole.SCHOOL_ADMIN: SchoolAdminProfile,
+}
+
+
+def _set_auth_cookies(response: Response, access_token: str, raw_refresh_token: str) -> None:
+    is_prod = settings.ENVIRONMENT != "development"
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=is_prod,
+        samesite="lax",
+        max_age=ACCESS_COOKIE_MAX_AGE,
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=raw_refresh_token,
+        httponly=True,
+        secure=is_prod,
+        samesite="lax",
+        max_age=REFRESH_COOKIE_MAX_AGE,
+        path="/auth",  # only sent back to auth endpoints, not every request
+    )
+
+
+def _clear_auth_cookies(response: Response) -> None:
+    response.delete_cookie("access_token")
+    response.delete_cookie("refresh_token", path="/auth")
+
+
+def _issue_tokens(db: Session, user: User) -> tuple[str, str]:
+    access_token = create_access_token(
+        subject=str(user.id), extra_claims={"role": user.role.value}
+    )
+
+    raw_refresh_token = generate_refresh_token()
+    db.add(
+        RefreshToken(
+            user_id=user.id,
+            token_hash=hash_refresh_token(raw_refresh_token),
+            expires_at=refresh_token_expiry(),
+        )
+    )
+    db.commit()
+    return access_token, raw_refresh_token
 
 
 @router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 def register(payload: UserCreate, db: Session = Depends(get_db)) -> User:
+    if payload.role not in SELF_REGISTERABLE_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This role cannot be self-registered",
+        )
+
     existing = db.query(User).filter(User.email == payload.email).first()
     if existing:
         raise HTTPException(status_code=400, detail="Email is already registered")
@@ -29,6 +105,11 @@ def register(payload: UserCreate, db: Session = Depends(get_db)) -> User:
         hashed_password=hash_password(payload.password),
     )
     db.add(user)
+    db.flush()  # assigns user.id without committing yet
+
+    profile_model = _PROFILE_MODEL_BY_ROLE[payload.role]
+    db.add(profile_model(user_id=user.id))
+
     db.commit()
     db.refresh(user)
     return user
@@ -42,22 +123,59 @@ def login(payload: LoginRequest, response: Response, db: Session = Depends(get_d
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Account is inactive")
 
-    token = create_access_token(subject=str(user.id), extra_claims={"role": user.role.value})
+    access_token, raw_refresh_token = _issue_tokens(db, user)
+    _set_auth_cookies(response, access_token, raw_refresh_token)
+    return Token(access_token=access_token)
 
-    response.set_cookie(
-        key="access_token",
-        value=token,
-        httponly=True,
-        secure=settings.ENVIRONMENT != "development",
-        samesite="lax",
-        max_age=COOKIE_MAX_AGE,
+
+@router.post("/refresh", response_model=Token)
+def refresh(
+    response: Response,
+    refresh_token: str | None = Cookie(default=None),
+    db: Session = Depends(get_db),
+) -> Token:
+    invalid = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired refresh token"
     )
-    return Token(access_token=token)
+    if not refresh_token:
+        raise invalid
+
+    token_hash = hash_refresh_token(refresh_token)
+    stored = db.query(RefreshToken).filter(RefreshToken.token_hash == token_hash).first()
+    if not stored or stored.revoked_at is not None:
+        raise invalid
+    if stored.expires_at < datetime.now(timezone.utc):
+        raise invalid
+
+    user = db.get(User, stored.user_id)
+    if not user or not user.is_active:
+        raise invalid
+
+    # Rotate on every use: revoke the presented token, issue a fresh pair.
+    # A reused (already-rotated) refresh token is refused above because
+    # its revoked_at is already set — this catches token theft/replay.
+    stored.revoked_at = datetime.now(timezone.utc)
+    db.add(stored)
+
+    access_token, raw_refresh_token = _issue_tokens(db, user)
+    _set_auth_cookies(response, access_token, raw_refresh_token)
+    return Token(access_token=access_token)
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-def logout(response: Response) -> None:
-    response.delete_cookie("access_token")
+def logout(
+    response: Response,
+    refresh_token: str | None = Cookie(default=None),
+    db: Session = Depends(get_db),
+) -> None:
+    if refresh_token:
+        token_hash = hash_refresh_token(refresh_token)
+        stored = db.query(RefreshToken).filter(RefreshToken.token_hash == token_hash).first()
+        if stored and stored.revoked_at is None:
+            stored.revoked_at = datetime.now(timezone.utc)
+            db.add(stored)
+            db.commit()
+    _clear_auth_cookies(response)
 
 
 @router.get("/me", response_model=UserRead)

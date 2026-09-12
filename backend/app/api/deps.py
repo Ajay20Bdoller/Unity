@@ -1,11 +1,12 @@
 import uuid
+from collections.abc import Callable
 
 from fastapi import Cookie, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.security import decode_access_token
 from app.db.session import get_db
-from app.models.user import User
+from app.models.user import User, UserRole
 
 
 def get_current_user(
@@ -33,3 +34,26 @@ def get_current_user(
         raise credentials_error
 
     return user
+
+
+def require_role(*roles: UserRole) -> Callable[[User], User]:
+    """Dependency factory: require_role(UserRole.ADMIN) etc. Frontend role
+    info is never trusted for this — it always re-checks against the
+    authenticated user resolved from the access token."""
+
+    def dependency(current_user: User = Depends(get_current_user)) -> User:
+        if current_user.role not in roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to access this resource",
+            )
+        return current_user
+
+    return dependency
+
+
+require_student = require_role(UserRole.STUDENT)
+require_parent = require_role(UserRole.PARENT)
+require_mentor = require_role(UserRole.MENTOR)
+require_school_admin = require_role(UserRole.SCHOOL_ADMIN)
+require_admin = require_role(UserRole.ADMIN)
