@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 30
 
+    OTP_EXPIRE_MINUTES: int = 10
+    OTP_MAX_ATTEMPTS: int = 5
+
     GROK_API_KEY: str = ""
     GROK_MODEL: str = "grok-beta"
     AI_MAX_TOKENS: int = 500

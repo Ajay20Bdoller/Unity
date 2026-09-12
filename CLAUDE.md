@@ -125,10 +125,15 @@ the access token server-side (see `require_*` deps in §4).
   (`SELF_REGISTERABLE_ROLES` in `app/models/user.py`). ADMIN is
   deliberately excluded — provision admin accounts via seed script or an
   existing admin's admin-API action once that exists, never open signup.
-- Minors: consent is modeled separately from authentication (not yet
-  built — see §11). No unrestricted private messaging between students
-  and mentors, ever — any mentorship messaging feature must be gated and
-  scoped, not open DM.
+- Minors: consent is modeled separately from authentication —
+  `guardian_relationships` (student-initiated, parent-verified identity
+  link) and `consent_records` (per-feature: MENTORSHIP, DATA_SHARING;
+  dev-mode OTP only, no SMS provider wired up) are two distinct axes.
+  Any sensitive feature must call `app.core.consent.has_active_consent`
+  before proceeding — a verified relationship alone is **not** enough.
+  No unrestricted private messaging between students and mentors, ever —
+  any mentorship messaging feature must be gated by this and scoped, not
+  open DM.
 - Career/assessment results are exploratory, never framed as a guaranteed
   outcome — applies to both backend response copy and frontend UI copy.
 - AI Career Assistant: salary questions get ranges with the "varies by
@@ -230,44 +235,52 @@ No component/e2e test framework configured yet (Vitest/Playwright etc.)
 
 ## 11. Current status & remaining phases
 
-**Done (commits `f91c869`, `e54b693`, `e77cc82`, and the auth-overhaul
-commit on top):** JWT auth with short-lived access + revocable rotating
-refresh tokens, role rename to STUDENT/PARENT/MENTOR/SCHOOL_ADMIN/ADMIN,
-identity/role-profile split (`students`/`parents`/`mentors`/
-`school_admin_profiles`), `languages` table (seeded) with a real FK from
-`users.preferred_language`, `states`/`districts`/`schools` location
-tables (schema only, no data yet), role-based `require_*` FastAPI
-dependencies, admin-cannot-self-register restriction, server-side
-password length validation. Verified end-to-end (register all 4 roles,
-duplicate/invalid rejections, login, refresh rotation + reuse rejection,
-logout, refresh-after-logout rejection, language update + invalid-code
-rejection, all 5 role dependencies) against a real Postgres instance.
-Next.js patched for CVE-2025-66478, `bcrypt` pinned.
+**Done:** JWT auth with short-lived access + revocable rotating refresh
+tokens; roles STUDENT/PARENT/MENTOR/SCHOOL_ADMIN/ADMIN with admin
+self-registration blocked; identity/role-profile split; `languages`
+table (seeded) with a real FK from `users`; `states`/`districts`/
+`schools` location tables (schema only); `require_*` role dependencies;
+student onboarding (`GET`/`PATCH /students/me`, with FK-existence
+validation for school/state/district); guardian relationships
+(student-initiated via `POST /students/me/guardians`, parent-verified
+via `POST /parents/me/guardians/{id}/verify`, or rejected); per-feature
+consent (`consent_records`, dev-mode OTP request/verify, `MENTORSHIP`
+and `DATA_SHARING` types) gated separately from relationship
+verification. Next.js patched for CVE-2025-66478, `bcrypt` pinned.
+
+Verified end-to-end against a real Postgres instance across two
+migrations (`0002`, `0003`, both upgrade/downgrade/upgrade-tested):
+full auth lifecycle, all 5 role dependencies, student onboarding incl.
+bad-FK rejection, guardian invite/duplicate/not-found/verify/reject,
+consent request-before-verified rejection, OTP wrong/correct/reused
+rejection-after-grant. 23/23 pytest (unit-level: security, deps, OTP
+helpers, model metadata — no live-DB test suite yet, see gaps below).
 
 **Known gaps to close early (foundational, not feature work):**
 - Frontend doesn't yet call `/auth/refresh` on a 401 — access tokens
   are short (15 min), so this needs wiring before it's usable end to end.
-- Guardian consent modeled separately from auth.
 - Backend endpoint-level integration tests (need a test-DB story) —
-  current coverage is unit-level only (no live DB in CI yet).
+  current coverage is unit-level only; the flows above were verified
+  manually (curl), not via an automated live-DB suite.
 - Frontend test framework decision.
 - `states`/`districts`/`schools` have no data yet — need the seed/import
   mechanism (explicitly: no giant hardcoded dataset in source).
+- OTP delivery is dev-mode only (echoed in the API response) — a real
+  SMS provider is required before production.
 
 **Remaining feature phases (roughly in order):**
 1. Dashboard shell + `dashboard_sections`/`role_dashboard_sections` +
    AI Career Assistant MVP (Grok, backend-only, safety/cost controls).
    This alone satisfies the product's first success criterion (register
    → login → dashboard → ask the assistant → get an answer).
-2. Student onboarding API (uses the `students` table fields already in
-   the schema), guardian relationship + consent model, location seed data.
+2. Location seed data (states/districts/schools import mechanism).
 3. Career library (categories, careers, translations, related careers,
    student interests).
 4. Courses + modules + lessons + enrollment + progress.
 5. Career assessment (rule-based scoring, not AI, ~10-15 seed questions).
 6. Campaigns + registration/source tracking.
 7. Mentorship foundation (profile, languages, expertise, availability,
-   manual/admin matching — no open chat).
+   manual/admin matching — no open chat; gate on `has_active_consent`).
 8. Announcements, admin APIs for everything above, comprehensive backend
    test suite, then the full frontend (routes for all 5 roles + i18n),
    then a full end-to-end verification pass.
