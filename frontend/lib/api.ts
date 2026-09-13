@@ -104,6 +104,12 @@ export interface AIChatResponse {
   provider: string;
 }
 
+export interface Language {
+  code: string;
+  name: string;
+  native_name: string;
+}
+
 export interface CareerCategory {
   id: string;
   key: string;
@@ -228,6 +234,66 @@ export interface AssessmentResult {
   note: string;
 }
 
+export type GuardianRelationshipStatus = "pending" | "verified" | "rejected";
+
+export interface GuardianRelationship {
+  id: string;
+  student_id: string;
+  parent_id: string;
+  status: GuardianRelationshipStatus;
+  created_at: string;
+  verified_at: string | null;
+  student_name?: string | null;
+  student_email?: string | null;
+}
+
+export type ConsentType = "mentorship" | "data_sharing";
+export type ConsentStatus = "pending" | "granted" | "rejected" | "expired" | "revoked";
+
+export interface ConsentOTPResponse {
+  message: string;
+  dev_otp: string | null;
+}
+
+export interface ConsentRecord {
+  id: string;
+  guardian_relationship_id: string;
+  consent_type: ConsentType;
+  status: ConsentStatus;
+  requested_at: string;
+  verified_at: string | null;
+  expires_at: string | null;
+}
+
+export type MentorshipRequestStatus = "pending" | "accepted" | "declined" | "completed";
+
+export interface MentorPublicProfile {
+  user_id: string;
+  full_name: string;
+  bio: string | null;
+  availability_note: string | null;
+  expertise: string[];
+  languages: string[];
+}
+
+export interface MentorshipRequest {
+  id: string;
+  student_id: string;
+  mentor_id: string;
+  message: string;
+  status: MentorshipRequestStatus;
+  requested_at: string;
+  responded_at: string | null;
+}
+
+export interface MentorshipSession {
+  id: string;
+  mentorship_request_id: string;
+  scheduled_at: string | null;
+  notes: string | null;
+  completed: boolean;
+}
+
 export const api = {
   register: (input: RegisterInput) =>
     request<User>("/auth/register", {
@@ -246,6 +312,7 @@ export const api = {
       method: "PATCH",
       body: JSON.stringify({ preferred_language }),
     }),
+  languages: () => request<Language[]>("/languages"),
   dashboardSections: () => request<DashboardSection[]>("/dashboard/sections"),
   aiChat: (message: string, history?: ChatMessage[]) =>
     request<AIChatResponse>("/ai/chat", {
@@ -296,4 +363,62 @@ export const api = {
     }),
   myAssessmentResults: (assessmentId: string) =>
     request<AssessmentResult[]>(`/students/me/assessments/${assessmentId}/results`),
+
+  // guardian / consent
+  inviteGuardian: (parentEmail: string) =>
+    request<GuardianRelationship>("/students/me/guardians", {
+      method: "POST",
+      body: JSON.stringify({ parent_email: parentEmail }),
+    }),
+  myGuardians: () => request<GuardianRelationship[]>("/students/me/guardians"),
+  parentGuardianRelationships: () => request<GuardianRelationship[]>("/parents/me/guardians"),
+  verifyGuardianRelationship: (relationshipId: string) =>
+    request<GuardianRelationship>(`/parents/me/guardians/${relationshipId}/verify`, {
+      method: "POST",
+    }),
+  rejectGuardianRelationship: (relationshipId: string) =>
+    request<GuardianRelationship>(`/parents/me/guardians/${relationshipId}/reject`, {
+      method: "POST",
+    }),
+  requestConsentOtp: (relationshipId: string, consentType: ConsentType) =>
+    request<ConsentOTPResponse>(
+      `/parents/me/guardians/${relationshipId}/consent/${consentType}/request-otp`,
+      { method: "POST" }
+    ),
+  verifyConsentOtp: (relationshipId: string, consentType: ConsentType, otp: string) =>
+    request<ConsentRecord>(
+      `/parents/me/guardians/${relationshipId}/consent/${consentType}/verify-otp`,
+      { method: "POST", body: JSON.stringify({ otp }) }
+    ),
+
+  // mentorship
+  mentors: (params?: { category?: string; language?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.category) qs.set("category", params.category);
+    if (params?.language) qs.set("language", params.language);
+    const suffix = qs.toString() ? `?${qs.toString()}` : "";
+    return request<MentorPublicProfile[]>(`/mentors${suffix}`);
+  },
+  updateMentorProfile: (payload: { bio?: string; availability_note?: string }) =>
+    request<MentorPublicProfile>("/mentors/me", { method: "PATCH", body: JSON.stringify(payload) }),
+  addMentorExpertise: (categoryId: string) =>
+    request<void>(`/mentors/me/expertise/${categoryId}`, { method: "POST" }),
+  addMentorLanguage: (languageCode: string) =>
+    request<void>(`/mentors/me/languages/${languageCode}`, { method: "POST" }),
+  requestMentorship: (mentorId: string, message: string) =>
+    request<MentorshipRequest>("/students/me/mentorship-requests", {
+      method: "POST",
+      body: JSON.stringify({ mentor_id: mentorId, message }),
+    }),
+  myMentorshipRequests: () => request<MentorshipRequest[]>("/students/me/mentorship-requests"),
+  incomingMentorshipRequests: () => request<MentorshipRequest[]>("/mentors/me/requests"),
+  acceptMentorshipRequest: (requestId: string) =>
+    request<MentorshipRequest>(`/mentors/me/requests/${requestId}/accept`, { method: "POST" }),
+  declineMentorshipRequest: (requestId: string) =>
+    request<MentorshipRequest>(`/mentors/me/requests/${requestId}/decline`, { method: "POST" }),
+  createMentorshipSession: (requestId: string, notes?: string) =>
+    request<MentorshipSession>(`/mentors/me/requests/${requestId}/sessions`, {
+      method: "POST",
+      body: JSON.stringify({ notes }),
+    }),
 };

@@ -20,8 +20,28 @@ export function SiteNav() {
             Courses
           </Link>
           {user?.role === "student" && (
-            <Link href="/student/assessment" className="hover:text-primary">
-              Assessment
+            <>
+              <Link href="/student/assessment" className="hover:text-primary">
+                Assessment
+              </Link>
+              <Link href="/student/mentorship" className="hover:text-primary">
+                Mentorship
+              </Link>
+            </>
+          )}
+          {user?.role === "mentor" && (
+            <>
+              <Link href="/mentor/profile" className="hover:text-primary">
+                My Profile
+              </Link>
+              <Link href="/mentor/requests" className="hover:text-primary">
+                Requests
+              </Link>
+            </>
+          )}
+          {user?.role === "parent" && (
+            <Link href="/parent/students" className="hover:text-primary">
+              My Students
             </Link>
           )}
           {user ? (

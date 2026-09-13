@@ -19,3 +19,5 @@ class GuardianRelationshipRead(BaseModel):
     status: GuardianRelationshipStatus
     created_at: datetime
     verified_at: datetime | None
+    student_name: str | None = None
+    student_email: str | None = None

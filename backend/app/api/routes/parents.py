@@ -28,13 +28,27 @@ def _get_owned_relationship(db: Session, current_user: User, relationship_id) ->
 @router.get("/me/guardians", response_model=list[GuardianRelationshipRead])
 def list_my_guardian_relationships(
     current_user: User = Depends(require_parent), db: Session = Depends(get_db)
-) -> list[GuardianRelationship]:
-    return (
-        db.query(GuardianRelationship)
+) -> list[GuardianRelationshipRead]:
+    rows = (
+        db.query(GuardianRelationship, User)
+        .join(User, User.id == GuardianRelationship.student_id)
         .filter(GuardianRelationship.parent_id == current_user.id)
         .order_by(GuardianRelationship.created_at.desc())
         .all()
     )
+    return [
+        GuardianRelationshipRead(
+            id=rel.id,
+            student_id=rel.student_id,
+            parent_id=rel.parent_id,
+            status=rel.status,
+            created_at=rel.created_at,
+            verified_at=rel.verified_at,
+            student_name=student.full_name,
+            student_email=student.email,
+        )
+        for rel, student in rows
+    ]
 
 
 @router.post("/me/guardians/{relationship_id}/verify", response_model=GuardianRelationshipRead)

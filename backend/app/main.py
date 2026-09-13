@@ -10,6 +10,7 @@ from app.api.routes import (
     careers,
     courses,
     dashboard,
+    languages,
     health,
     mentorship,
     parents,
@@ -54,3 +55,4 @@ app.include_router(mentorship.student_router)
 app.include_router(mentorship.session_router)
 app.include_router(announcements.router)
 app.include_router(announcements.admin_router)
+app.include_router(languages.router)
