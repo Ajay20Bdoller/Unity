@@ -81,7 +81,7 @@ export default function MentorProfilePage() {
     <>
       <SiteNav />
       <main className="mx-auto max-w-2xl px-6 py-10">
-        <h1 className="text-2xl font-semibold text-ink">My mentor profile</h1>
+        <h1 className="font-display text-2xl font-medium text-ink">My mentor profile</h1>
         <p className="mt-1 text-sm text-muted">
           Students will see this when browsing mentors.
         </p>
@@ -92,7 +92,7 @@ export default function MentorProfilePage() {
             value={bio}
             onChange={(e) => setBio(e.target.value)}
             rows={3}
-            className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/40"
+            className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/40"
           />
           <label className="mt-3 block text-sm font-medium text-ink">Availability</label>
           <Input

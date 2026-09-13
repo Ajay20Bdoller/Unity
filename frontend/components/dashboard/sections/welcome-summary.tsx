@@ -18,7 +18,7 @@ export function WelcomeSummary() {
   return (
     <Card>
       <p className="text-sm text-muted">{roleLabels[user.role] ?? user.role}</p>
-      <h1 className="mt-1 text-2xl font-semibold text-ink">Welcome, {user.full_name}</h1>
+      <h1 className="mt-1 font-display text-2xl font-medium text-ink">Welcome, {user.full_name}</h1>
     </Card>
   );
 }

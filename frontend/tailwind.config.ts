@@ -1,26 +1,37 @@
 import type { Config } from "tailwindcss";
 
+function withOpacity(variable: string) {
+  return `rgb(var(${variable}) / <alpha-value>)`;
+}
+
 const config: Config = {
+  darkMode: "class",
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        background: "#F7F5F1",
-        ink: "#1F2421",
-        muted: "#6B7570",
-        border: "#E1DDD3",
+        background: withOpacity("--color-background"),
+        surface: withOpacity("--color-surface"),
+        "surface-raised": withOpacity("--color-surface-raised"),
+        ink: withOpacity("--color-ink"),
+        muted: withOpacity("--color-muted"),
+        border: withOpacity("--color-border"),
         primary: {
-          DEFAULT: "#1E6F5C",
-          foreground: "#FFFFFF",
+          DEFAULT: withOpacity("--color-primary"),
+          foreground: withOpacity("--color-primary-foreground"),
         },
         accent: {
-          DEFAULT: "#E8A33D",
-          foreground: "#1F2421",
+          DEFAULT: withOpacity("--color-accent"),
+          foreground: withOpacity("--color-accent-foreground"),
         },
-        danger: "#C24A3F",
+        danger: {
+          DEFAULT: withOpacity("--color-danger"),
+          foreground: withOpacity("--color-danger-foreground"),
+        },
       },
       fontFamily: {
         sans: ["var(--font-manrope)", "system-ui", "sans-serif"],
+        display: ["var(--font-fraunces)", "Georgia", "serif"],
       },
     },
   },

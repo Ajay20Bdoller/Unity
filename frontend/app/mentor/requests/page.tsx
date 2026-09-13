@@ -69,7 +69,7 @@ export default function MentorRequestsPage() {
     <>
       <SiteNav />
       <main className="mx-auto max-w-2xl px-6 py-10">
-        <h1 className="text-2xl font-semibold text-ink">Mentorship requests</h1>
+        <h1 className="font-display text-2xl font-medium text-ink">Mentorship requests</h1>
 
         <div className="mt-6 space-y-4">
           {requests.length === 0 && <p className="text-sm text-muted">No requests yet.</p>}

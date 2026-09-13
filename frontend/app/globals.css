@@ -2,7 +2,66 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+  Palette: "First light" — a deep teal anchor (trust, growth) with a
+  marigold accent (the small, specific warmth of a sunrise, not a
+  generic SaaS blue-and-orange). Values are R G B triplets so Tailwind
+  opacity modifiers (bg-primary/10, etc.) keep working.
+*/
+:root {
+  --color-background: 247 245 241;
+  --color-surface: 255 255 255;
+  --color-surface-raised: 255 255 255;
+  --color-ink: 31 36 33;
+  --color-muted: 107 117 112;
+  --color-border: 225 221 211;
+  --color-primary: 30 111 92;
+  --color-primary-foreground: 255 255 255;
+  --color-accent: 232 163 61;
+  --color-accent-foreground: 31 36 33;
+  --color-danger: 194 74 63;
+  --color-danger-foreground: 255 255 255;
+}
+
+.dark {
+  --color-background: 13 19 18;
+  --color-surface: 22 29 27;
+  --color-surface-raised: 27 36 33;
+  --color-ink: 232 236 233;
+  --color-muted: 148 161 154;
+  --color-border: 41 52 48;
+  --color-primary: 88 184 155;
+  --color-primary-foreground: 10 16 15;
+  --color-accent: 232 168 74;
+  --color-accent-foreground: 15 20 19;
+  --color-danger: 227 128 117;
+  --color-danger-foreground: 20 12 11;
+}
+
+* {
+  border-color: rgb(var(--color-border));
+}
+
+html {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
 body {
-  background-color: #F7F5F1;
-  color: #1F2421;
+  background-color: rgb(var(--color-background));
+  color: rgb(var(--color-ink));
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+/* Respect reduced-motion preferences platform-wide. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

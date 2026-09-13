@@ -17,7 +17,7 @@ export default function CoursesPage() {
     <>
       <SiteNav />
       <main className="mx-auto max-w-5xl px-6 py-10">
-        <h1 className="text-2xl font-semibold text-ink">Free courses</h1>
+        <h1 className="font-display text-2xl font-medium text-ink">Free courses</h1>
         <p className="mt-1 text-sm text-muted">Learn at your own pace, no cost.</p>
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2">

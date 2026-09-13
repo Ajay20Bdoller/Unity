@@ -126,7 +126,7 @@ export default function ParentStudentsPage() {
     <>
       <SiteNav />
       <main className="mx-auto max-w-2xl px-6 py-10">
-        <h1 className="text-2xl font-semibold text-ink">My students</h1>
+        <h1 className="font-display text-2xl font-medium text-ink">My students</h1>
         <p className="mt-1 text-sm text-muted">
           Students who have linked you as their guardian. Verify a link to confirm it&apos;s
           really your child, then grant consent for specific features when you&apos;re ready.

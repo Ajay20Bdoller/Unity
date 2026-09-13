@@ -31,7 +31,7 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center px-6">
       <Card className="w-full max-w-sm">
-        <h1 className="text-xl font-semibold text-ink">Log in</h1>
+        <h1 className="font-display text-xl font-medium text-ink">Log in</h1>
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <Field label="Email" htmlFor="email">
             <Input

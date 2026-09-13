@@ -65,7 +65,7 @@ export default function StudentMentorshipPage() {
     <>
       <SiteNav />
       <main className="mx-auto max-w-3xl px-6 py-10">
-        <h1 className="text-2xl font-semibold text-ink">Mentorship</h1>
+        <h1 className="font-display text-2xl font-medium text-ink">Mentorship</h1>
         <p className="mt-1 text-sm text-muted">
           Requesting a mentor requires your parent/guardian to grant mentorship consent first.
         </p>

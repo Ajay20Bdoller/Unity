@@ -87,7 +87,7 @@ export default function CareerDetailPage() {
       <main className="mx-auto max-w-3xl px-6 py-10">
         <p className="text-sm text-muted">{career.category.name}</p>
         <div className="mt-1 flex items-start justify-between gap-4">
-          <h1 className="text-2xl font-semibold text-ink">{career.title}</h1>
+          <h1 className="font-display text-2xl font-medium text-ink">{career.title}</h1>
           {user?.role === "student" && (
             <Button variant="secondary" disabled={savingInterest} onClick={toggleInterest}>
               {interested ? "Remove interest" : "I'm interested"}

@@ -103,7 +103,7 @@ export default function AssessmentPage() {
       <main className="mx-auto max-w-2xl px-6 py-10">
         {step === "intro" && assessment && (
           <Card>
-            <h1 className="text-xl font-semibold text-ink">{assessment.title}</h1>
+            <h1 className="font-display text-xl font-medium text-ink">{assessment.title}</h1>
             <p className="mt-2 text-sm text-muted">{assessment.description}</p>
             <Button className="mt-6" onClick={start}>
               Start
@@ -172,7 +172,7 @@ export default function AssessmentPage() {
 
         {step === "result" && result && (
           <Card>
-            <h1 className="text-xl font-semibold text-ink">Areas to explore</h1>
+            <h1 className="font-display text-xl font-medium text-ink">Areas to explore</h1>
             <p className="mt-2 text-sm text-muted">{result.note}</p>
             <div className="mt-4 space-y-2">
               {result.suggested_categories.map((cat) => (

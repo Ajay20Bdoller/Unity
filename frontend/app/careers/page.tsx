@@ -38,7 +38,7 @@ function CareersPageContent() {
     <>
       <SiteNav />
       <main className="mx-auto max-w-5xl px-6 py-10">
-        <h1 className="text-2xl font-semibold text-ink">Explore careers</h1>
+        <h1 className="font-display text-2xl font-medium text-ink">Explore careers</h1>
         <p className="mt-1 text-sm text-muted">
           Browse career areas to understand what people in them actually do — not a test,
           just a way to explore.

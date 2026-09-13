@@ -41,7 +41,7 @@ export default function RegisterPage() {
   return (
     <main className="flex min-h-screen items-center justify-center px-6 py-12">
       <Card className="w-full max-w-sm">
-        <h1 className="text-xl font-semibold text-ink">Create an account</h1>
+        <h1 className="font-display text-xl font-medium text-ink">Create an account</h1>
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <Field label="Full name" htmlFor="fullName">
             <Input
@@ -75,7 +75,7 @@ export default function RegisterPage() {
               id="role"
               value={role}
               onChange={(e) => setRole(e.target.value as UserRole)}
-              className="w-full rounded-md border border-border bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/40"
+              className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/40"
             >
               {roles.map((r) => (
                 <option key={r.value} value={r.value}>
