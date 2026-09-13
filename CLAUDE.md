@@ -295,10 +295,15 @@ throughout.
 - In-memory AI rate limiter is single-process only.
 - Assessment question authoring (weighted options) has no admin form
   yet — flagged in the admin page itself, not faked.
-- i18n is UI-chrome-level only (language switcher persists a
-  preference) — actual translated UI strings/content per language
-  haven't been built; career/course translation *tables* exist but
-  nothing renders through them in the frontend yet.
+- Real i18n now exists (`frontend/lib/i18n/{en,hi,bn,te,pa}.json` +
+  `lib/language-context.tsx`'s `t()` hook, all 5 files key-parity
+  checked) but is only wired into SiteNav, the homepage, and login/
+  register so far -- every other page (careers, courses, assessment,
+  mentorship, parent, admin, dashboard sections) still has hardcoded
+  English strings. Extending `t()` to the rest of the app is real,
+  substantial remaining work, not a small follow-up. Career/course
+  *content* translation tables are a separate thing from this UI-string
+  system and still aren't rendered through in the frontend either.
 - Parent registration's `student_name` and student registration's
   `parent_name`/`parent_relation` are informational text only, not a
   verified link — the real link is still the separate guardian_

@@ -5,17 +5,14 @@ import Link from "next/link";
 import { Moon, Sun, Globe, ChevronDown } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme-context";
-import { api, type Language } from "@/lib/api";
+import { useLanguage, SUPPORTED_LANGUAGES, type LanguageCode } from "@/lib/language-context";
+import { api } from "@/lib/api";
 
 function LanguagePicker() {
   const { user } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
   const [open, setOpen] = useState(false);
-  const [languages, setLanguages] = useState<Language[]>([]);
   const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    api.languages().then(setLanguages).catch(() => setLanguages([]));
-  }, []);
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -25,16 +22,14 @@ function LanguagePicker() {
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
 
-  const current = languages.find((l) => l.code === user?.preferred_language);
+  const current = SUPPORTED_LANGUAGES.find((l) => l.code === language);
 
-  async function pick(code: string) {
+  function pick(code: LanguageCode) {
     setOpen(false);
-    if (user) {
-      await api.updateLanguage(code);
-      // A full reload keeps this simple and correct everywhere, since
-      // preferred_language isn't held in a lot of local component state.
-      window.location.reload();
-    }
+    // Switches the whole UI instantly, logged in or not. If logged in,
+    // also best-effort persists it to the account (so career/course
+    // content-language and a next login both pick it up too).
+    setLanguage(code, user ? (c) => api.updateLanguage(c) : undefined);
   }
 
   return (
@@ -43,7 +38,7 @@ function LanguagePicker() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-1 rounded-md px-2 py-1.5 text-sm text-ink hover:bg-border/30"
-        aria-label="Change language"
+        aria-label={t("nav.changeLanguage")}
       >
         <Globe size={16} />
         <span className="hidden sm:inline">{current?.native_name ?? "EN"}</span>
@@ -51,13 +46,13 @@ function LanguagePicker() {
       </button>
       {open && (
         <div className="absolute right-0 top-full mt-1 w-40 overflow-hidden rounded-md border border-border bg-surface shadow-md">
-          {languages.map((l) => (
+          {SUPPORTED_LANGUAGES.map((l) => (
             <button
               key={l.code}
               type="button"
               onClick={() => pick(l.code)}
               className={`block w-full px-3 py-2 text-left text-sm hover:bg-border/30 ${
-                l.code === user?.preferred_language ? "text-primary" : "text-ink"
+                l.code === language ? "text-primary" : "text-ink"
               }`}
             >
               {l.native_name}
@@ -71,12 +66,13 @@ function LanguagePicker() {
 
 function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
+  const { t } = useLanguage();
   return (
     <button
       type="button"
       onClick={toggleTheme}
       className="rounded-md p-2 text-ink hover:bg-border/30"
-      aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+      aria-label={theme === "dark" ? t("nav.switchToLight") : t("nav.switchToDark")}
     >
       {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
     </button>
@@ -85,57 +81,58 @@ function ThemeToggle() {
 
 export function SiteNav() {
   const { user } = useAuth();
+  const { t } = useLanguage();
 
   return (
     <nav className="sticky top-0 z-20 border-b border-border bg-background/80 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
         <Link href="/" className="font-display text-lg font-semibold text-ink">
-          Unity
+          {t("nav.brand")}
         </Link>
         <div className="flex items-center gap-1 text-sm text-ink sm:gap-2">
           <Link href="/careers" className="rounded-md px-2 py-1.5 hover:bg-border/30">
-            Careers
+            {t("nav.careers")}
           </Link>
           <Link href="/courses" className="rounded-md px-2 py-1.5 hover:bg-border/30">
-            Courses
+            {t("nav.courses")}
           </Link>
           {user?.role === "student" && (
             <>
               <Link href="/student/assessment" className="rounded-md px-2 py-1.5 hover:bg-border/30">
-                Assessment
+                {t("nav.assessment")}
               </Link>
               <Link href="/student/mentorship" className="rounded-md px-2 py-1.5 hover:bg-border/30">
-                Mentorship
+                {t("nav.mentorship")}
               </Link>
             </>
           )}
           {user?.role === "mentor" && (
             <>
               <Link href="/mentor/profile" className="rounded-md px-2 py-1.5 hover:bg-border/30">
-                My Profile
+                {t("nav.myProfile")}
               </Link>
               <Link href="/mentor/requests" className="rounded-md px-2 py-1.5 hover:bg-border/30">
-                Requests
+                {t("nav.requests")}
               </Link>
             </>
           )}
           {user?.role === "parent" && (
             <Link href="/parent/students" className="rounded-md px-2 py-1.5 hover:bg-border/30">
-              My Students
+              {t("nav.myStudents")}
             </Link>
           )}
           {user?.role === "admin" && (
             <Link href="/admin" className="rounded-md px-2 py-1.5 hover:bg-border/30">
-              Admin
+              {t("nav.admin")}
             </Link>
           )}
           {user ? (
             <Link href="/dashboard" className="rounded-md px-2 py-1.5 hover:bg-border/30">
-              Dashboard
+              {t("nav.dashboard")}
             </Link>
           ) : (
             <Link href="/login" className="rounded-md px-2 py-1.5 hover:bg-border/30">
-              Log in
+              {t("nav.login")}
             </Link>
           )}
 

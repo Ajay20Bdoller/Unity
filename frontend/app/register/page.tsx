@@ -3,21 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useAuth, ApiError } from "@/lib/auth-context";
+import { useLanguage } from "@/lib/language-context";
 import type { RegisterInput, UserRole } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/field";
 import { Card } from "@/components/ui/card";
 import { SiteNav } from "@/components/site-nav";
-
-const roles: { value: UserRole; label: string }[] = [
-  { value: "student", label: "Student" },
-  { value: "parent", label: "Parent / Guardian" },
-  { value: "mentor", label: "Mentor" },
-  { value: "school_admin", label: "School / Institution" },
-];
-
-const relationOptions = ["Mother", "Father", "Guardian", "Other"];
 
 type FormState = {
   full_name: string;
@@ -59,10 +51,24 @@ const emptyForm: FormState = {
 
 export default function RegisterPage() {
   const { register } = useAuth();
+  const { t } = useLanguage();
   const [role, setRole] = useState<UserRole>("student");
   const [form, setForm] = useState<FormState>(emptyForm);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const roles: { value: UserRole; label: string }[] = [
+    { value: "student", label: t("register.roleStudent") },
+    { value: "parent", label: t("register.roleParent") },
+    { value: "mentor", label: t("register.roleMentor") },
+    { value: "school_admin", label: t("register.roleSchoolAdmin") },
+  ];
+  const relationOptions = [
+    { value: "Mother", label: t("register.relationMother") },
+    { value: "Father", label: t("register.relationFather") },
+    { value: "Guardian", label: t("register.relationGuardian") },
+    { value: "Other", label: t("register.relationOther") },
+  ];
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -78,11 +84,11 @@ export default function RegisterPage() {
     setError(null);
 
     if (form.password !== form.confirmPassword) {
-      setError("Passwords don't match.");
+      setError(t("register.passwordMismatchError"));
       return;
     }
     if (role === "student" && !form.email && !form.mobile_number) {
-      setError("Add an email or a mobile number so you can log back in.");
+      setError(t("register.contactRequiredError"));
       return;
     }
 
@@ -134,7 +140,7 @@ export default function RegisterPage() {
       <SiteNav />
       <main className="flex min-h-[calc(100vh-57px)] items-center justify-center px-6 py-12">
         <Card className="w-full max-w-lg">
-          <h1 className="font-display text-xl font-medium text-ink">Create an account</h1>
+          <h1 className="font-display text-xl font-medium text-ink">{t("register.title")}</h1>
 
           <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
             {roles.map((r) => (
@@ -154,7 +160,7 @@ export default function RegisterPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-            <Field label="Full name" htmlFor="full_name">
+            <Field label={t("register.fullNameLabel")} htmlFor="full_name">
               <Input
                 id="full_name"
                 required
@@ -164,7 +170,10 @@ export default function RegisterPage() {
             </Field>
 
             <div className="grid grid-cols-2 gap-4">
-              <Field label={role === "student" ? "Email (optional)" : "Email"} htmlFor="email">
+              <Field
+                label={role === "student" ? t("register.emailOptionalLabel") : t("register.emailLabel")}
+                htmlFor="email"
+              >
                 <Input
                   id="email"
                   type="email"
@@ -173,24 +182,22 @@ export default function RegisterPage() {
                   onChange={(e) => set("email", e.target.value)}
                 />
               </Field>
-              <Field label="Mobile number" htmlFor="mobile_number">
+              <Field label={t("register.mobileLabel")} htmlFor="mobile_number">
                 <Input
                   id="mobile_number"
                   required={role !== "student"}
                   value={form.mobile_number}
                   onChange={(e) => set("mobile_number", e.target.value)}
-                  placeholder="9876543210"
+                  placeholder={t("register.mobilePlaceholder")}
                 />
               </Field>
             </div>
             {role === "student" && (
-              <p className="text-xs text-muted">
-                Add at least an email or a mobile number — you&apos;ll use it to log in later.
-              </p>
+              <p className="text-xs text-muted">{t("register.studentContactHint")}</p>
             )}
 
             {(role === "student" || role === "mentor" || role === "school_admin") && (
-              <Field label="Date of birth" htmlFor="date_of_birth">
+              <Field label={t("register.dobLabel")} htmlFor="date_of_birth">
                 <Input
                   id="date_of_birth"
                   type="date"
@@ -203,7 +210,7 @@ export default function RegisterPage() {
 
             {role === "student" && (
               <>
-                <Field label="School name" htmlFor="school_name">
+                <Field label={t("register.schoolNameLabel")} htmlFor="school_name">
                   <Input
                     id="school_name"
                     required
@@ -212,7 +219,7 @@ export default function RegisterPage() {
                   />
                 </Field>
                 <div className="grid grid-cols-2 gap-4">
-                  <Field label="Parent/guardian name" htmlFor="parent_name">
+                  <Field label={t("register.parentNameLabel")} htmlFor="parent_name">
                     <Input
                       id="parent_name"
                       required
@@ -220,7 +227,7 @@ export default function RegisterPage() {
                       onChange={(e) => set("parent_name", e.target.value)}
                     />
                   </Field>
-                  <Field label="Relation" htmlFor="parent_relation">
+                  <Field label={t("register.relationLabel")} htmlFor="parent_relation">
                     <select
                       id="parent_relation"
                       required
@@ -228,16 +235,16 @@ export default function RegisterPage() {
                       onChange={(e) => set("parent_relation", e.target.value)}
                       className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/40"
                     >
-                      <option value="">Select</option>
+                      <option value="">{t("register.relationSelect")}</option>
                       {relationOptions.map((r) => (
-                        <option key={r} value={r}>
-                          {r}
+                        <option key={r.value} value={r.value}>
+                          {r.label}
                         </option>
                       ))}
                     </select>
                   </Field>
                 </div>
-                <Field label="Home address" htmlFor="address">
+                <Field label={t("register.addressLabel")} htmlFor="address">
                   <Input
                     id="address"
                     required
@@ -246,7 +253,7 @@ export default function RegisterPage() {
                   />
                 </Field>
                 <div className="grid grid-cols-3 gap-4">
-                  <Field label="District" htmlFor="district">
+                  <Field label={t("register.districtLabel")} htmlFor="district">
                     <Input
                       id="district"
                       required
@@ -254,7 +261,7 @@ export default function RegisterPage() {
                       onChange={(e) => set("district", e.target.value)}
                     />
                   </Field>
-                  <Field label="State" htmlFor="state">
+                  <Field label={t("register.stateLabel")} htmlFor="state">
                     <Input
                       id="state"
                       required
@@ -262,7 +269,7 @@ export default function RegisterPage() {
                       onChange={(e) => set("state", e.target.value)}
                     />
                   </Field>
-                  <Field label="Country" htmlFor="country">
+                  <Field label={t("register.countryLabel")} htmlFor="country">
                     <Input
                       id="country"
                       required
@@ -276,7 +283,7 @@ export default function RegisterPage() {
 
             {role === "parent" && (
               <div className="grid grid-cols-2 gap-4">
-                <Field label="Student's name" htmlFor="student_name">
+                <Field label={t("register.studentNameLabel")} htmlFor="student_name">
                   <Input
                     id="student_name"
                     required
@@ -284,7 +291,7 @@ export default function RegisterPage() {
                     onChange={(e) => set("student_name", e.target.value)}
                   />
                 </Field>
-                <Field label="Relation to student" htmlFor="relation_to_student">
+                <Field label={t("register.relationToStudentLabel")} htmlFor="relation_to_student">
                   <select
                     id="relation_to_student"
                     required
@@ -292,10 +299,10 @@ export default function RegisterPage() {
                     onChange={(e) => set("relation_to_student", e.target.value)}
                     className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/40"
                   >
-                    <option value="">Select</option>
+                    <option value="">{t("register.relationSelect")}</option>
                     {relationOptions.map((r) => (
-                      <option key={r} value={r}>
-                        {r}
+                      <option key={r.value} value={r.value}>
+                        {r.label}
                       </option>
                     ))}
                   </select>
@@ -303,14 +310,12 @@ export default function RegisterPage() {
               </div>
             )}
             {role === "parent" && (
-              <p className="-mt-2 text-xs text-muted">
-                You&apos;ll confirm this link with your child from your dashboard after signing up.
-              </p>
+              <p className="-mt-2 text-xs text-muted">{t("register.parentLinkHint")}</p>
             )}
 
             {role === "school_admin" && (
               <div className="grid grid-cols-2 gap-4">
-                <Field label="School name" htmlFor="school_name_admin">
+                <Field label={t("register.schoolNameLabel")} htmlFor="school_name_admin">
                   <Input
                     id="school_name_admin"
                     required
@@ -318,7 +323,7 @@ export default function RegisterPage() {
                     onChange={(e) => set("school_name", e.target.value)}
                   />
                 </Field>
-                <Field label="School location" htmlFor="school_location">
+                <Field label={t("register.schoolLocationLabel")} htmlFor="school_location">
                   <Input
                     id="school_location"
                     required
@@ -330,7 +335,7 @@ export default function RegisterPage() {
             )}
 
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Password" htmlFor="password">
+              <Field label={t("register.passwordLabel")} htmlFor="password">
                 <Input
                   id="password"
                   type="password"
@@ -340,7 +345,7 @@ export default function RegisterPage() {
                   onChange={(e) => set("password", e.target.value)}
                 />
               </Field>
-              <Field label="Confirm password" htmlFor="confirmPassword">
+              <Field label={t("register.confirmPasswordLabel")} htmlFor="confirmPassword">
                 <Input
                   id="confirmPassword"
                   type="password"
@@ -354,14 +359,14 @@ export default function RegisterPage() {
 
             {error && <p className="text-sm text-danger">{error}</p>}
             <Button type="submit" disabled={submitting} className="w-full">
-              {submitting ? "Creating account…" : "Create account"}
+              {submitting ? t("register.creatingAccount") : t("register.createAccountButton")}
             </Button>
           </form>
 
           <p className="mt-5 text-sm text-muted">
-            Already have an account?{" "}
+            {t("register.alreadyHaveAccount")}{" "}
             <Link href="/login" className="font-medium text-primary">
-              Log in
+              {t("register.loginLink")}
             </Link>
           </p>
         </Card>
