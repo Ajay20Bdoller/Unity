@@ -14,6 +14,7 @@ from app.core.security import (
     verify_password,
 )
 from app.db.session import get_db
+from app.models.campaign import Campaign, CampaignRegistration
 from app.models.profiles import (
     MentorProfile,
     ParentProfile,
@@ -109,6 +110,21 @@ def register(payload: UserCreate, db: Session = Depends(get_db)) -> User:
 
     profile_model = _PROFILE_MODEL_BY_ROLE[payload.role]
     db.add(profile_model(user_id=user.id))
+
+    # Acquisition tracking is best-effort: an unknown, inactive, or
+    # absent campaign_key must never block account creation.
+    if payload.campaign_key:
+        campaign = (
+            db.query(Campaign)
+            .filter(Campaign.key == payload.campaign_key, Campaign.active.is_(True))
+            .first()
+        )
+        if campaign:
+            db.add(
+                CampaignRegistration(
+                    user_id=user.id, campaign_id=campaign.id, source=payload.source
+                )
+            )
 
     db.commit()
     db.refresh(user)

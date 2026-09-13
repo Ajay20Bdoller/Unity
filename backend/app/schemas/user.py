@@ -15,6 +15,8 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+    campaign_key: str | None = None
+    source: str | None = None
 
     @field_validator("password")
     @classmethod

@@ -36,6 +36,13 @@ cp .env.local.example .env.local   # set NEXT_PUBLIC_API_URL
 npm run dev
 ```
 
+## First admin account
+
+ADMIN can't self-register (see CLAUDE.md §5). Create one with:
+```bash
+cd backend && python -m scripts.create_admin --email you@example.com --name "Your Name"
+```
+
 ## Testing
 
 ```bash
@@ -67,7 +74,11 @@ security/database rules, and the full phased build plan.
       careers, student interests) — backend only, no frontend UI yet
 - [x] Courses, modules, lessons (video/article/quiz/external),
       enrollment, lesson progress, continue-learning — backend only
-- [ ] Assessment, campaigns, mentorship, announcements, admin APIs/UI,
+- [x] Campaigns + registration source tracking (best-effort attribution
+      at registration, never blocks account creation)
+- [x] Admin bootstrap script (`scripts/create_admin.py`) — the only way
+      to create an ADMIN account
+- [ ] Assessment, mentorship, announcements, remaining admin APIs/UI,
       i18n
 
 See [`CLAUDE.md`](./CLAUDE.md) §11 for the full phased plan.

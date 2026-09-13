@@ -244,32 +244,35 @@ table (seeded) with a real FK from `users`; `states`/`districts`/
 student onboarding; guardian relationships; per-feature consent
 (dev-mode OTP); dashboard config backend + frontend section registry;
 AI Career Assistant (backend + dashboard card, confirmed provider is
-Groq — see gaps); career library (categories/careers/translations/
-related careers/student interests); **courses** (`courses`,
-`course_translations`, `modules`, `lessons` — video/article/quiz/
-external_resource types — `enrollments`, `lesson_progress`; browse,
-enroll, complete-lesson gated on enrollment, per-course progress %,
-continue-learning resolving the first incomplete lesson in order,
-admin CRUD for courses/modules/lessons). Next.js patched for
-CVE-2025-66478, `bcrypt` pinned.
+Groq — see gaps); career library; courses (browse, enroll, progress,
+continue-learning, admin CRUD); **campaigns** (`campaigns`,
+`campaign_registrations` — best-effort acquisition attribution
+captured via an optional `campaign_key`/`source` at `/auth/register`,
+never blocks registration on an unknown/inactive key; admin
+list/create/update campaigns and view registrations per campaign);
+**`scripts/create_admin.py`** — the only way to create an ADMIN
+account, since `/auth/register` refuses ADMIN by design (this was a
+real gap — there was previously no way at all to create the first
+admin except raw SQL, discovered while testing campaigns). Next.js
+patched for CVE-2025-66478, `bcrypt` pinned.
 
 This closes the product's first success criterion end-to-end, including
 the frontend: register → login → dashboard → ask the AI assistant.
 Career library is backend-only so far — no frontend career pages yet
 (see gaps).
 
-Verified end-to-end against a real Postgres instance across six
-migrations (`0001`-`0006`, each upgrade/downgrade/upgrade-tested, full
+Verified end-to-end against a real Postgres instance across seven
+migrations (`0001`-`0007`, each upgrade/downgrade/upgrade-tested, full
 chain also verified from scratch): the complete auth lifecycle, all 5
-role dependencies, student onboarding, guardian invite/verify/reject,
-consent OTP flow, dashboard sections resolving and rendering, `/ai/
-chat` end to end, career browsing/i18n-fallback/interest toggle, and
-courses — browse, detail with ordered modules/lessons, completing a
-lesson before enrolling correctly rejected (400), enroll, progress %
-updates correctly (0% -> 33% after 1 of 3 lessons), continue-learning
-correctly resolves the next incomplete lesson, non-admin blocked from
-admin course endpoints (403). 42/42 backend pytest, frontend `tsc`/
-lint clean.
+role dependencies, student onboarding, guardian/consent flows,
+dashboard sections, `/ai/chat`, career browsing/i18n, courses/
+enrollment/progress, and campaigns — created a real admin via the
+bootstrap script and logged in with it, created a campaign, registered
+a student with a valid `campaign_key` (correctly attributed with its
+`source`), registered another with an unknown key (succeeded anyway,
+no crash), confirmed the registrations list showed exactly the one
+correctly-attributed row, non-admin blocked from admin campaign
+endpoints (403). 43/43 backend pytest, frontend `tsc`/lint clean.
 
 **Known gaps to close early (foundational, not feature work):**
 - Confirmed AI provider is **Groq**, not xAI's Grok (the shared key was
@@ -285,17 +288,20 @@ lint clean.
   don't exist as an automated suite (flows verified manually via curl).
 - Frontend test framework decision.
 - `states`/`districts`/`schools` have no data yet.
-- No frontend UI for career browsing or courses yet — backend only.
+- No frontend UI for career browsing, courses, or campaigns yet —
+  backend only.
+- No in-app way for an existing admin to create another admin yet
+  (only the CLI script) — a real "admin creates admin" API is future
+  work once the admin UI phase happens.
 - OTP delivery is dev-mode only.
 - In-memory AI rate limiter is single-process only.
 
 **Remaining feature phases (roughly in order):**
 1. Career assessment (rule-based scoring, not AI, ~10-15 seed questions).
-2. Campaigns + registration/source tracking.
-3. Mentorship foundation (profile, languages, expertise, availability,
+2. Mentorship foundation (profile, languages, expertise, availability,
    manual/admin matching — no open chat; gate on `has_active_consent`).
-4. Location seed data (states/districts/schools import mechanism).
-5. Announcements, admin APIs for everything above, comprehensive backend
+3. Location seed data (states/districts/schools import mechanism).
+4. Announcements, admin APIs for everything above, comprehensive backend
    test suite, then the rest of the frontend (career browsing UI,
    student onboarding UI, course/lesson UI, assessment UI, mentorship,
    parent UI, admin UI, i18n for all 5 languages), then a full
