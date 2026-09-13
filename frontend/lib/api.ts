@@ -104,6 +104,130 @@ export interface AIChatResponse {
   provider: string;
 }
 
+export interface CareerCategory {
+  id: string;
+  key: string;
+  name: string;
+  description: string | null;
+  display_order: number;
+}
+
+export interface CareerListItem {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  category_key: string;
+}
+
+export interface CareerDetail {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  eligibility: string | null;
+  subjects: string[] | null;
+  skills: string[] | null;
+  entrance_exams: string[] | null;
+  education_pathway: string | null;
+  roadmap: string | null;
+  category: CareerCategory;
+  related_careers: CareerListItem[];
+  language: string;
+}
+
+export type LessonContentType = "video" | "article" | "quiz" | "external_resource";
+
+export interface Lesson {
+  id: string;
+  title: string;
+  content_type: LessonContentType;
+  content_url: string | null;
+  content_body: string | null;
+  display_order: number;
+}
+
+export interface Module {
+  id: string;
+  title: string;
+  display_order: number;
+  lessons: Lesson[];
+}
+
+export interface CourseListItem {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  thumbnail_url: string | null;
+}
+
+export interface CourseDetail extends CourseListItem {
+  modules: Module[];
+  language: string;
+}
+
+export interface LessonWithProgress extends Lesson {
+  completed: boolean;
+}
+
+export interface ModuleWithProgress {
+  id: string;
+  title: string;
+  display_order: number;
+  lessons: LessonWithProgress[];
+}
+
+export interface CourseDetailWithProgress extends CourseListItem {
+  modules: ModuleWithProgress[];
+  enrolled: boolean;
+}
+
+export interface Enrollment {
+  course: CourseListItem;
+  enrolled_at: string;
+  total_lessons: number;
+  completed_lessons: number;
+  progress_percent: number;
+}
+
+export interface ContinueLearningItem {
+  course: CourseListItem;
+  next_lesson: Lesson | null;
+  progress_percent: number;
+}
+
+export interface AssessmentSummary {
+  id: string;
+  title: string;
+  description: string;
+}
+
+export interface AssessmentOption {
+  value: string;
+  label: string;
+}
+
+export interface AssessmentQuestion {
+  id: string;
+  question_text: string;
+  options: AssessmentOption[];
+  display_order: number;
+}
+
+export interface SuggestedCategory {
+  key: string;
+  name: string;
+}
+
+export interface AssessmentResult {
+  id: string;
+  assessment_id: string;
+  suggested_categories: SuggestedCategory[];
+  submitted_at: string;
+  note: string;
+}
+
 export const api = {
   register: (input: RegisterInput) =>
     request<User>("/auth/register", {
@@ -128,4 +252,48 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ message, history }),
     }),
+
+  // careers
+  careerCategories: () => request<CareerCategory[]>("/careers/categories"),
+  careers: (params?: { category?: string; q?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.category) qs.set("category", params.category);
+    if (params?.q) qs.set("q", params.q);
+    const suffix = qs.toString() ? `?${qs.toString()}` : "";
+    return request<CareerListItem[]>(`/careers${suffix}`);
+  },
+  career: (slug: string, lang?: string) =>
+    request<CareerDetail>(`/careers/${slug}${lang ? `?lang=${lang}` : ""}`),
+  myCareerInterests: () => request<CareerListItem[]>("/students/me/career-interests"),
+  addCareerInterest: (careerId: string) =>
+    request<void>(`/students/me/career-interests/${careerId}`, { method: "POST" }),
+  removeCareerInterest: (careerId: string) =>
+    request<void>(`/students/me/career-interests/${careerId}`, { method: "DELETE" }),
+
+  // courses
+  courses: () => request<CourseListItem[]>("/courses"),
+  course: (slug: string) => request<CourseDetail>(`/courses/${slug}`),
+  courseWithMyProgress: (slug: string) =>
+    request<CourseDetailWithProgress>(`/students/me/courses/${slug}`),
+  myEnrollments: () => request<Enrollment[]>("/students/me/enrollments"),
+  enroll: (courseId: string) =>
+    request<void>(`/students/me/enrollments/${courseId}`, { method: "POST" }),
+  completeLesson: (lessonId: string) =>
+    request<void>(`/students/me/lessons/${lessonId}/complete`, { method: "POST" }),
+  continueLearning: () => request<ContinueLearningItem[]>("/students/me/continue-learning"),
+
+  // assessment
+  assessments: () => request<AssessmentSummary[]>("/assessments"),
+  assessmentQuestions: (assessmentId: string) =>
+    request<AssessmentQuestion[]>(`/assessments/${assessmentId}/questions`),
+  submitAssessment: (
+    assessmentId: string,
+    responses: { question_id: string; selected_option_value: string }[]
+  ) =>
+    request<AssessmentResult>(`/students/me/assessments/${assessmentId}/submit`, {
+      method: "POST",
+      body: JSON.stringify({ responses }),
+    }),
+  myAssessmentResults: (assessmentId: string) =>
+    request<AssessmentResult[]>(`/students/me/assessments/${assessmentId}/results`),
 };

@@ -11,12 +11,15 @@ from app.schemas.course import (
     ContinueLearningItem,
     CourseCreate,
     CourseDetail,
+    CourseDetailWithProgress,
     CourseListItem,
     CourseUpdate,
     EnrollmentRead,
     LessonCreate,
     LessonRead,
+    LessonWithProgress,
     ModuleCreate,
+    ModuleWithProgress,
     ModuleRead,
 )
 
@@ -80,6 +83,66 @@ def get_course(slug: str, db: Session = Depends(get_db)) -> CourseDetail:
 
 
 # --- student enrollment & progress ---
+
+
+@student_router.get("/courses/{slug}", response_model=CourseDetailWithProgress)
+def get_course_with_my_progress(
+    slug: str,
+    current_user: User = Depends(require_student),
+    db: Session = Depends(get_db),
+) -> CourseDetailWithProgress:
+    course = db.query(Course).filter(Course.slug == slug, Course.published.is_(True)).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    enrolled = (
+        db.query(Enrollment)
+        .filter(Enrollment.student_id == current_user.id, Enrollment.course_id == course.id)
+        .first()
+        is not None
+    )
+    completed_lesson_ids = {
+        row[0]
+        for row in db.query(LessonProgress.lesson_id)
+        .filter(LessonProgress.student_id == current_user.id)
+        .all()
+    }
+
+    modules = (
+        db.query(Module).filter(Module.course_id == course.id).order_by(Module.display_order).all()
+    )
+    module_reads = []
+    for module in modules:
+        lessons = (
+            db.query(Lesson)
+            .filter(Lesson.module_id == module.id)
+            .order_by(Lesson.display_order)
+            .all()
+        )
+        module_reads.append(
+            ModuleWithProgress(
+                id=module.id,
+                title=module.title,
+                display_order=module.display_order,
+                lessons=[
+                    LessonWithProgress(
+                        **LessonRead.model_validate(lesson).model_dump(),
+                        completed=lesson.id in completed_lesson_ids,
+                    )
+                    for lesson in lessons
+                ],
+            )
+        )
+
+    return CourseDetailWithProgress(
+        id=course.id,
+        slug=course.slug,
+        title=course.title,
+        description=course.description,
+        thumbnail_url=course.thumbnail_url,
+        modules=module_reads,
+        enrolled=enrolled,
+    )
 
 
 @student_router.post("/enrollments/{course_id}", status_code=status.HTTP_204_NO_CONTENT)

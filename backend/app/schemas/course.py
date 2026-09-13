@@ -27,6 +27,13 @@ class ModuleRead(BaseModel):
     lessons: list[LessonRead]
 
 
+class ModuleWithProgress(BaseModel):
+    id: uuid.UUID
+    title: str
+    display_order: int
+    lessons: list[LessonWithProgress]
+
+
 class CourseListItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -40,6 +47,11 @@ class CourseListItem(BaseModel):
 class CourseDetail(CourseListItem):
     modules: list[ModuleRead]
     language: str = "en"
+
+
+class CourseDetailWithProgress(CourseListItem):
+    modules: list[ModuleWithProgress]
+    enrolled: bool
 
 
 class EnrollmentRead(BaseModel):
