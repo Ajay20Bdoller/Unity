@@ -18,8 +18,8 @@ class Settings(BaseSettings):
     OTP_MAX_ATTEMPTS: int = 5
 
     GROK_API_KEY: str = ""
-    GROK_MODEL: str = "grok-beta"
-    GROK_BASE_URL: str = "https://api.x.ai/v1"
+    GROK_MODEL: str = "llama-3.3-70b-versatile"
+    GROK_BASE_URL: str = "https://api.groq.com/openai/v1"
     AI_MAX_TOKENS: int = 500
     AI_TEMPERATURE: float = 0.4
     AI_REQUEST_TIMEOUT: int = 20

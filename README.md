@@ -63,7 +63,9 @@ security/database rules, and the full phased build plan.
 - [x] Dashboard config backend + registry-driven frontend rendering
 - [x] AI Career Assistant (backend + dashboard card) — needs a real
       `GROK_API_KEY` to actually answer (see CLAUDE.md §11)
-- [ ] Career library, courses, assessment, campaigns, mentorship,
-      announcements, admin APIs/UI, i18n
+- [x] Career library (categories, careers, translations, related
+      careers, student interests) — backend only, no frontend UI yet
+- [ ] Courses, assessment, campaigns, mentorship, announcements, admin
+      APIs/UI, i18n
 
 See [`CLAUDE.md`](./CLAUDE.md) §11 for the full phased plan.

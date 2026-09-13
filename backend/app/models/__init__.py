@@ -1,3 +1,10 @@
+from app.models.career import (  # noqa: F401
+    Career,
+    CareerCategory,
+    CareerTranslation,
+    RelatedCareer,
+    StudentCareerInterest,
+)
 from app.models.consent import ConsentRecord, ConsentStatus, ConsentType  # noqa: F401
 from app.models.dashboard import DashboardSection, RoleDashboardSection  # noqa: F401
 from app.models.guardian import GuardianRelationship, GuardianRelationshipStatus  # noqa: F401

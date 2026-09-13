@@ -241,74 +241,64 @@ tokens; roles STUDENT/PARENT/MENTOR/SCHOOL_ADMIN/ADMIN with admin
 self-registration blocked; identity/role-profile split; `languages`
 table (seeded) with a real FK from `users`; `states`/`districts`/
 `schools` location tables (schema only); `require_*` role dependencies;
-student onboarding; guardian relationships (student-initiated,
-parent-verified); per-feature consent (dev-mode OTP, gated separately
-from relationship verification); dashboard config backend
-(`dashboard_sections` + `role_dashboard_sections`, admin CRUD, resolved
-per-user list via `GET /dashboard/sections`, seeded with `welcome` +
-`ai_assistant` for all 5 roles); AI Career Assistant (`POST /ai/chat`,
-provider-agnostic `AIService` + `GrokProvider`, in-memory rate limiter,
-friendly-error handling that never leaks internal reasons or the API
-key). Next.js patched for CVE-2025-66478, `bcrypt` pinned.
+student onboarding; guardian relationships; per-feature consent
+(dev-mode OTP); dashboard config backend + frontend section registry;
+AI Career Assistant (backend + dashboard card, confirmed provider is
+Groq — see gaps); **career library** (`career_categories` — all 12
+seeded — `careers`, `career_translations`, `related_careers`,
+`student_career_interests`; public browse/filter/search/detail with
+language-fallback, student interest toggle, admin CRUD incl.
+translations and related-career links). Next.js patched for
+CVE-2025-66478, `bcrypt` pinned.
 
-This closes the product's first success criterion **end-to-end,
-including the frontend**: register → login → dashboard (renders
-`welcome_summary` + `ai_assistant_card` via a fixed section registry,
-`frontend/components/dashboard/section-registry.tsx`) → ask the AI
-assistant. The one missing piece is a real `GROK_API_KEY` (asked for,
-not invented, per doc-22 instructions — verified locally that a missing
-key fails gracefully with a friendly error in the UI, not a crash).
+This closes the product's first success criterion end-to-end, including
+the frontend: register → login → dashboard → ask the AI assistant.
+Career library is backend-only so far — no frontend career pages yet
+(see gaps).
 
-Verified end-to-end against a real Postgres instance across four
-migrations (`0001`-`0004`, each upgrade/downgrade/upgrade-tested, full
+Verified end-to-end against a real Postgres instance across five
+migrations (`0001`-`0005`, each upgrade/downgrade/upgrade-tested, full
 chain also verified from scratch): the complete auth lifecycle
-(including the frontend's refresh-on-401 retry logic, verified with a
-Node script replicating `lib/api.ts`'s exact control flow against the
-live backend — not just a unit test), all 5 role dependencies, student
-onboarding incl. bad-FK rejection, guardian invite/duplicate/not-found/
-verify/reject, consent request/OTP wrong/correct/reused, dashboard
-sections resolving correctly per role and rendering through the
-registry, and `/ai/chat` end to end (unauthenticated rejected,
-missing-key handled gracefully, empty/oversized message rejected).
-38/38 backend pytest, frontend `tsc`/lint clean.
+(including the frontend's refresh-on-401 retry, verified against the
+live backend), all 5 role dependencies, student onboarding, guardian
+invite/verify/reject, consent OTP flow, dashboard sections resolving
+and rendering, `/ai/chat` end to end, and career browsing/filtering/
+search/detail with Hindi translation resolving correctly and Bengali
+correctly falling back to English, student interest add/idempotent-
+duplicate/remove, non-admin blocked from admin career endpoints (403).
+40/40 backend pytest, frontend `tsc`/lint clean.
 
 **Known gaps to close early (foundational, not feature work):**
-- No real `GROK_API_KEY` yet — ask the project owner for it; never
-  invent one. Everything is built and tested against a fake provider in
-  the meantime. (A `gsk_...`-format key was shared once — that prefix is
-  Groq's, not xAI's Grok; easy mix-up given the near-identical names.
-  Groq's API is also OpenAI-compatible at `https://api.groq.com/openai/v1`
-  with model IDs like `llama-3.3-70b-versatile`, so the existing
-  `GrokProvider` code works unchanged for it — only `GROK_BASE_URL` and
-  `GROK_MODEL` need to point at Groq instead. Confirm which provider is
-  actually intended before wiring a real key into `.env`.)
+- Confirmed AI provider is **Groq**, not xAI's Grok (the shared key was
+  `gsk_`-prefixed). `GROK_BASE_URL`/`GROK_MODEL` defaults updated to
+  Groq's endpoint and a real Groq model. **Still unverified live** — this
+  sandbox's network egress is a fixed domain allowlist that blocks both
+  `api.groq.com` and `api.x.ai` (confirmed via direct curl: HTTP 403,
+  `x-deny-reason: host_not_allowed`, not a timeout, not an auth failure).
+  The actual chat completion call needs to be tried from an environment
+  with real network access (the project owner's machine, Claude Code, a
+  CI runner) before trusting it works.
 - Backend endpoint-level integration tests against a *live DB* still
-  don't exist as an automated suite (the flows above were verified
-  manually via curl) — the `/ai/chat` tests are the one exception,
-  since that endpoint has no DB dependency at all.
+  don't exist as an automated suite (flows verified manually via curl).
 - Frontend test framework decision.
-- `states`/`districts`/`schools` have no data yet — need the seed/import
-  mechanism (explicitly: no giant hardcoded dataset in source).
-- OTP delivery is dev-mode only (echoed in the API response) — a real
-  SMS provider is required before production.
-- In-memory AI rate limiter is single-process only (documented in
-  `app/services/ai/rate_limit.py`) — fine for MVP, needs a Redis-backed
-  swap before running more than one server instance.
+- `states`/`districts`/`schools` have no data yet.
+- No frontend UI for career browsing yet — only the backend API exists.
+- OTP delivery is dev-mode only.
+- In-memory AI rate limiter is single-process only.
 
 **Remaining feature phases (roughly in order):**
-1. Location seed data (states/districts/schools import mechanism).
-2. Career library (categories, careers, translations, related careers,
-   student interests).
-3. Courses + modules + lessons + enrollment + progress.
-4. Career assessment (rule-based scoring, not AI, ~10-15 seed questions).
-5. Campaigns + registration/source tracking.
-6. Mentorship foundation (profile, languages, expertise, availability,
+1. Courses + modules + lessons + enrollment + progress.
+2. Career assessment (rule-based scoring, not AI, ~10-15 seed questions).
+3. Campaigns + registration/source tracking.
+4. Mentorship foundation (profile, languages, expertise, availability,
    manual/admin matching — no open chat; gate on `has_active_consent`).
-7. Announcements, admin APIs for everything above, comprehensive backend
-   test suite, then the rest of the frontend (student onboarding UI,
-   career exploration, assessment UI, courses, mentorship, parent UI,
+5. Location seed data (states/districts/schools import mechanism).
+6. Announcements, admin APIs for everything above, comprehensive backend
+   test suite, then the rest of the frontend (career browsing UI,
+   student onboarding UI, assessment UI, courses, mentorship, parent UI,
    admin UI, i18n for all 5 languages), then a full end-to-end
    verification pass.
+
 
 ## 12. Environment
 
