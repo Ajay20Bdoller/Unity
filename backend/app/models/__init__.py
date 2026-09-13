@@ -35,6 +35,7 @@ from app.models.mentorship import (  # noqa: F401
     MentorshipRequestStatus,
     MentorshipSession,
 )
+from app.models.password_reset import PasswordResetRequest  # noqa: F401
 from app.models.profiles import (  # noqa: F401
     MentorProfile,
     ParentProfile,

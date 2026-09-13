@@ -47,7 +47,15 @@ export default function LoginPage() {
                 placeholder={t("auth.identifierPlaceholder")}
               />
             </Field>
-            <Field label={t("auth.passwordLabel")} htmlFor="password">
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label htmlFor="password" className="block text-sm font-medium text-ink">
+                  {t("auth.passwordLabel")}
+                </label>
+                <Link href="/forgot-password" className="text-xs text-primary hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
               <Input
                 id="password"
                 type="password"
@@ -55,7 +63,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
-            </Field>
+            </div>
             {error && <p className="text-sm text-danger">{error}</p>}
             <Button type="submit" disabled={submitting} className="w-full">
               {submitting ? t("auth.loggingIn") : t("auth.loginButton")}

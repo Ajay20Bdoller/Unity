@@ -110,6 +110,25 @@ the access token server-side (see `require_*` deps in §4).
 
 ## 5. Security rules
 
+- **Session lifetime:** access tokens are 7 days (was 15 minutes) so a
+  logged-in user effectively stays logged in until they log out
+  manually or are inactive for a full 30 days (the refresh token's
+  lifetime, which renews on every use) — a short access token combined
+  with multiple browser tabs has a real race condition (two tabs both
+  refresh near-simultaneously, the second one's refresh token is
+  already rotated away by the first, so it 401s) that a long access
+  token mostly sidesteps by making refreshes rare instead of fixing the
+  underlying race. Worth a proper fix (grace-period on rotation, or
+  cross-tab coordination) if this ever needs to come back down for
+  security reasons.
+- **Forgot password:** mobile-number-only (`/auth/forgot-password/
+  request-otp`, `/auth/forgot-password/reset`), deliberately no email
+  path — matches email being optional for students. Same dev-mode-OTP
+  pattern as consent. Always returns the same generic message whether
+  or not the number is registered, so it can't be used to enumerate
+  accounts. A successful reset revokes every other active refresh
+  token for that user (a reset is often itself a signal of a
+  compromised account).
 - **Login identifier:** `users.email` is now nullable — a student who
   is a minor without an email can register with just `mobile_number`
   instead. At least one of the two is enforced by a DB CHECK constraint
@@ -281,7 +300,12 @@ seeded), courses/modules/lessons/enrollment/progress, campaigns +
 best-effort attribution, `scripts/create_admin.py` bootstrap +
 GET/PATCH /admin/users, career assessment (rule-based, 10 seeded
 questions), mentorship foundation (gated on `has_active_consent`, no
-chat), announcements (role + language filtered).
+chat), announcements (role + language filtered), Indian states seeded
+(36) + public GET /states, two more dashboard sections (continue-
+learning, recent announcements), mobile-only forgot-password (OTP,
+generic non-leaking response, revokes other sessions on reset), and
+GET /admin/dashboard/stats (users by role, content counts, mentorship-
+by-status, recent registrations) backing a real admin overview page.
 
 **Frontend:** login/register (role-specific dynamic form), dashboard,
 career browsing, courses, assessment flow, mentorship (student +

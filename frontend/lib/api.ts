@@ -426,6 +426,27 @@ export interface RoleDashboardSection {
   config_override: Record<string, unknown> | null;
 }
 
+export interface RecentUser {
+  id: string;
+  full_name: string;
+  role: UserRole;
+  created_at: string;
+}
+
+export interface AdminActivityStats {
+  total_users: number;
+  users_by_role: Record<string, number>;
+  total_careers: number;
+  total_career_interests: number;
+  total_courses: number;
+  total_enrollments: number;
+  total_mentorship_requests: number;
+  mentorship_requests_by_status: Record<string, number>;
+  total_campaigns: number;
+  total_campaign_registrations: number;
+  recent_users: RecentUser[];
+}
+
 export const api = {
   register: (input: RegisterInput) =>
     request<User>("/auth/register", {
@@ -436,6 +457,16 @@ export const api = {
     request<{ access_token: string }>("/auth/login", {
       method: "POST",
       body: JSON.stringify({ identifier, password }),
+    }),
+  requestPasswordResetOtp: (mobile_number: string) =>
+    request<{ message: string; dev_otp: string | null }>("/auth/forgot-password/request-otp", {
+      method: "POST",
+      body: JSON.stringify({ mobile_number }),
+    }),
+  resetPassword: (mobile_number: string, otp: string, new_password: string) =>
+    request<void>("/auth/forgot-password/reset", {
+      method: "POST",
+      body: JSON.stringify({ mobile_number, otp, new_password }),
     }),
   logout: () => request<void>("/auth/logout", { method: "POST" }),
   me: () => request<User>("/auth/me"),
@@ -571,6 +602,7 @@ export const api = {
 
   // admin
   adminUsers: () => request<AdminUser[]>("/admin/users"),
+  adminActivityStats: () => request<AdminActivityStats>("/admin/dashboard/stats"),
   adminSetUserActive: (userId: string, isActive: boolean) =>
     request<AdminUser>(`/admin/users/${userId}`, {
       method: "PATCH",

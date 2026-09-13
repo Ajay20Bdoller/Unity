@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.core.config import get_settings
+from app.core.consent import generate_otp, hash_otp, otp_expiry
 from app.core.security import (
     create_access_token,
     generate_refresh_token,
@@ -16,6 +17,7 @@ from app.core.security import (
 )
 from app.db.session import get_db
 from app.models.campaign import Campaign, CampaignRegistration
+from app.models.password_reset import PasswordResetRequest
 from app.models.profiles import (
     MentorProfile,
     ParentProfile,
@@ -24,7 +26,13 @@ from app.models.profiles import (
 )
 from app.models.refresh_token import RefreshToken
 from app.models.user import SELF_REGISTERABLE_ROLES, User, UserRole
-from app.schemas.auth import LoginRequest, Token
+from app.schemas.auth import (
+    ForgotPasswordOTPResponse,
+    ForgotPasswordRequest,
+    LoginRequest,
+    ResetPasswordRequest,
+    Token,
+)
 from app.schemas.user import UserCreate, UserRead
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -232,3 +240,84 @@ def logout(
 @router.get("/me", response_model=UserRead)
 def read_current_user(current_user: User = Depends(get_current_user)) -> User:
     return current_user
+
+
+@router.post("/forgot-password/request-otp", response_model=ForgotPasswordOTPResponse)
+def request_password_reset_otp(
+    payload: ForgotPasswordRequest, db: Session = Depends(get_db)
+) -> ForgotPasswordOTPResponse:
+    """Mobile number only — this platform's identifier for password
+    reset, not email (see CLAUDE.md: email is optional for students).
+    Always returns the same generic message whether or not the number
+    is registered, so this can't be used to check which numbers have
+    accounts; only populates dev_otp when a matching user actually
+    exists AND we're in dev mode."""
+    is_dev = settings.ENVIRONMENT == "development"
+    user = db.query(User).filter(User.mobile_number == payload.mobile_number).first()
+
+    if not user:
+        return ForgotPasswordOTPResponse(
+            message="If this mobile number is registered, an OTP has been generated."
+        )
+
+    raw_otp = generate_otp()
+    db.add(
+        PasswordResetRequest(
+            user_id=user.id,
+            otp_hash=hash_otp(raw_otp),
+            otp_expires_at=otp_expiry(),
+        )
+    )
+    db.commit()
+
+    return ForgotPasswordOTPResponse(
+        message="If this mobile number is registered, an OTP has been generated.",
+        dev_otp=raw_otp if is_dev else None,
+    )
+
+
+@router.post("/forgot-password/reset", status_code=status.HTTP_204_NO_CONTENT)
+def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db)) -> None:
+    invalid = HTTPException(status_code=400, detail="Invalid or expired OTP")
+
+    user = db.query(User).filter(User.mobile_number == payload.mobile_number).first()
+    if not user:
+        raise invalid
+
+    reset_request = (
+        db.query(PasswordResetRequest)
+        .filter(PasswordResetRequest.user_id == user.id, PasswordResetRequest.used.is_(False))
+        .order_by(PasswordResetRequest.created_at.desc())
+        .first()
+    )
+    if not reset_request:
+        raise invalid
+    if reset_request.otp_attempts >= settings.OTP_MAX_ATTEMPTS:
+        raise HTTPException(status_code=429, detail="Too many attempts — request a new OTP")
+    if reset_request.otp_expires_at < datetime.now(timezone.utc):
+        raise invalid
+    if hash_otp(payload.otp) != reset_request.otp_hash:
+        reset_request.otp_attempts += 1
+        db.add(reset_request)
+        db.commit()
+        raise invalid
+
+    user.hashed_password = hash_password(payload.new_password)
+    reset_request.used = True
+    db.add(user)
+    db.add(reset_request)
+
+    # A password reset is a credible signal the account may have been
+    # compromised (that's often exactly why someone is resetting it) —
+    # revoke every other active session rather than leaving them valid.
+    active_refresh_tokens = (
+        db.query(RefreshToken)
+        .filter(RefreshToken.user_id == user.id, RefreshToken.revoked_at.is_(None))
+        .all()
+    )
+    now = datetime.now(timezone.utc)
+    for token in active_refresh_tokens:
+        token.revoked_at = now
+        db.add(token)
+
+    db.commit()
