@@ -4,7 +4,7 @@ from collections import defaultdict
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_admin, require_student
+from app.api.deps import get_current_user, require_admin, require_student
 from app.db.session import get_db
 from app.models.assessment import (
     Assessment,
@@ -33,12 +33,18 @@ TOP_N_SUGGESTIONS = 3
 
 
 @router.get("", response_model=list[AssessmentRead])
-def list_assessments(db: Session = Depends(get_db)) -> list[Assessment]:
+def list_assessments(
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+) -> list[Assessment]:
     return db.query(Assessment).filter(Assessment.is_active.is_(True)).all()
 
 
 @router.get("/{assessment_id}/questions", response_model=list[PublicQuestion])
-def get_questions(assessment_id: uuid.UUID, db: Session = Depends(get_db)) -> list[PublicQuestion]:
+def get_questions(
+    assessment_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[PublicQuestion]:
     if not db.query(Assessment).filter(Assessment.id == assessment_id).first():
         raise HTTPException(status_code=404, detail="Assessment not found")
     questions = (

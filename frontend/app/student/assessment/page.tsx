@@ -26,6 +26,10 @@ export default function AssessmentPage() {
 
   useEffect(() => {
     if (authLoading) return;
+    if (!user || user.role !== "student") {
+      setStep("unavailable");
+      return;
+    }
     api
       .assessments()
       .then((list) => {
@@ -37,7 +41,7 @@ export default function AssessmentPage() {
         setStep("intro");
       })
       .catch(() => setStep("unavailable"));
-  }, [authLoading]);
+  }, [authLoading, user]);
 
   async function start() {
     if (!assessment) return;

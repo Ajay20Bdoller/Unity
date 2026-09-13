@@ -9,9 +9,18 @@ def _get_seeded_assessment(client):
     return res.json()[0]
 
 
-def test_questions_never_leak_weights(client):
-    assessment = _get_seeded_assessment(client)
-    questions = client.get(f"/assessments/{assessment['id']}/questions").json()
+def test_browsing_assessments_requires_login(client):
+    assert client.get("/assessments").status_code == 401
+    # The auth dependency runs before any route logic, so a fake id is
+    # fine here -- we're only confirming the 401 happens at all, not
+    # what happens after it.
+    fake_id = "00000000-0000-0000-0000-000000000000"
+    assert client.get(f"/assessments/{fake_id}/questions").status_code == 401
+
+
+def test_questions_never_leak_weights(student_client):
+    assessment = _get_seeded_assessment(student_client)
+    questions = student_client.get(f"/assessments/{assessment['id']}/questions").json()
     assert len(questions) == 10
     for q in questions:
         for option in q["options"]:
