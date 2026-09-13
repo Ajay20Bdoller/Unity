@@ -55,6 +55,47 @@ def test_mentorship_request_blocked_without_any_consent(student_client):
     assert res.status_code == 403
 
 
+def test_unapproved_mentor_blocks_request_even_with_full_consent(client, db_session):
+    """A registered-but-not-yet-approved mentor must be unreachable for
+    requests, independent of the student's consent status entirely --
+    this test grants real consent and confirms it still 404s."""
+    student = TestClient(app)
+    parent = TestClient(app)
+
+    _register_student(student, mobile="9200000099")
+    _register_parent(parent, email="unapproved-flow-parent@example.com")
+
+    unapproved_mentor = User(
+        email="unapproved-mentor@example.com",
+        full_name="Unapproved Mentor",
+        role=UserRole.MENTOR,
+        hashed_password=hash_password("TestPass123!"),
+    )
+    db_session.add(unapproved_mentor)
+    db_session.commit()
+    db_session.add(MentorProfile(user_id=unapproved_mentor.id, is_approved=False))
+    db_session.commit()
+
+    invite = student.post(
+        "/students/me/guardians", json={"parent_email": "unapproved-flow-parent@example.com"}
+    )
+    relationship_id = invite.json()["id"]
+    parent.post(f"/parents/me/guardians/{relationship_id}/verify")
+    otp = parent.post(
+        f"/parents/me/guardians/{relationship_id}/consent/mentorship/request-otp"
+    ).json()["dev_otp"]
+    parent.post(
+        f"/parents/me/guardians/{relationship_id}/consent/mentorship/verify-otp",
+        json={"otp": otp},
+    )
+
+    still_blocked = student.post(
+        "/students/me/mentorship-requests",
+        json={"mentor_id": str(unapproved_mentor.id), "message": "help"},
+    )
+    assert still_blocked.status_code == 404
+
+
 def test_full_consent_to_mentorship_chain(client, db_session):
     # Three independent logged-in sessions can't share one TestClient
     # (cookies would clobber each other), so build them separately.
@@ -73,7 +114,8 @@ def test_full_consent_to_mentorship_chain(client, db_session):
     )
     db_session.add(mentor_user)
     db_session.commit()
-    db_session.add(MentorProfile(user_id=mentor_user.id))
+    mentor_profile = MentorProfile(user_id=mentor_user.id, is_approved=True)
+    db_session.add(mentor_profile)
     db_session.commit()
     mentor.post(
         "/auth/login",

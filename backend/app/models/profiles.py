@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import Date, DateTime, ForeignKey, String, Text, func
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -83,6 +83,11 @@ class MentorProfile(Base):
     date_of_birth: Mapped[date | None] = mapped_column(Date, nullable=True)
     bio: Mapped[str | None] = mapped_column(Text, nullable=True)
     availability_note: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    # A mentor is invisible to students (not returned by GET /mentors,
+    # and can't receive requests even by direct API call — see
+    # mentorship.py) until an admin approves them. Registering does not
+    # imply any vetting has happened.
+    is_approved: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

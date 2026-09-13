@@ -20,6 +20,16 @@ class MentorPublicProfile(BaseModel):
     languages: list[str]  # language codes
 
 
+class AdminMentorRead(BaseModel):
+    user_id: uuid.UUID
+    full_name: str
+    email: str | None
+    mobile_number: str | None
+    bio: str | None
+    is_approved: bool
+    created_at: datetime
+
+
 class MentorshipRequestCreate(BaseModel):
     mentor_id: uuid.UUID
     message: str

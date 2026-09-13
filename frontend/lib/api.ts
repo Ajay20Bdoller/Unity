@@ -447,6 +447,16 @@ export interface AdminActivityStats {
   recent_users: RecentUser[];
 }
 
+export interface AdminMentor {
+  user_id: string;
+  full_name: string;
+  email: string | null;
+  mobile_number: string | null;
+  bio: string | null;
+  is_approved: boolean;
+  created_at: string;
+}
+
 export const api = {
   register: (input: RegisterInput) =>
     request<User>("/auth/register", {
@@ -603,6 +613,11 @@ export const api = {
   // admin
   adminUsers: () => request<AdminUser[]>("/admin/users"),
   adminActivityStats: () => request<AdminActivityStats>("/admin/dashboard/stats"),
+  adminMentors: () => request<AdminMentor[]>("/admin/mentors"),
+  adminApproveMentor: (userId: string) =>
+    request<AdminMentor>(`/admin/mentors/${userId}/approve`, { method: "POST" }),
+  adminUnapproveMentor: (userId: string) =>
+    request<AdminMentor>(`/admin/mentors/${userId}/unapprove`, { method: "POST" }),
   adminSetUserActive: (userId: string, isActive: boolean) =>
     request<AdminUser>(`/admin/users/${userId}`, {
       method: "PATCH",

@@ -110,6 +110,15 @@ the access token server-side (see `require_*` deps in §4).
 
 ## 5. Security rules
 
+- **Mentor approval:** registering as a mentor does not make you
+  discoverable. `mentors.is_approved` defaults false; `GET /mentors`
+  (public browsing) filters on it, and — defense in depth, not just
+  relying on the list being filtered — `POST /students/me/mentorship-
+  requests` independently checks it and 404s an unapproved mentor (same
+  404 as a nonexistent one, so a student probing IDs can't distinguish
+  "doesn't exist" from "not approved yet"). Admin: `GET /admin/mentors`
+  (pending + approved, with contact info), `POST /admin/mentors/{id}/
+  approve` (one click), `.../unapprove` to revoke.
 - **Session lifetime:** access tokens are 7 days (was 15 minutes) so a
   logged-in user effectively stays logged in until they log out
   manually or are inactive for a full 30 days (the refresh token's

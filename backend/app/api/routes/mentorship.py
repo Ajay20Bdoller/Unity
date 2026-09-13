@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_mentor, require_student
+from app.api.deps import require_admin, require_mentor, require_student
 from app.core.consent import student_has_any_active_consent
 from app.db.session import get_db
 from app.models.career import CareerCategory
@@ -21,6 +21,7 @@ from app.models.mentorship import (
 from app.models.profiles import MentorProfile
 from app.models.user import User, UserRole
 from app.schemas.mentorship import (
+    AdminMentorRead,
     MentorProfileUpdate,
     MentorPublicProfile,
     MentorshipFeedbackCreate,
@@ -36,6 +37,7 @@ router = APIRouter(prefix="/mentors", tags=["mentors"])
 mentor_router = APIRouter(prefix="/mentors/me", tags=["mentors"])
 student_router = APIRouter(prefix="/students/me/mentorship-requests", tags=["students"])
 session_router = APIRouter(prefix="/mentorship-sessions", tags=["mentorship"])
+admin_router = APIRouter(prefix="/admin/mentors", tags=["admin"])
 
 
 def _public_profile(db: Session, mentor: User, profile: MentorProfile | None) -> MentorPublicProfile:
@@ -66,7 +68,11 @@ def _public_profile(db: Session, mentor: User, profile: MentorProfile | None) ->
 def list_mentors(
     category: str | None = None, language: str | None = None, db: Session = Depends(get_db)
 ) -> list[MentorPublicProfile]:
-    query = db.query(User).filter(User.role == UserRole.MENTOR)
+    query = (
+        db.query(User)
+        .join(MentorProfile, MentorProfile.user_id == User.id)
+        .filter(User.role == UserRole.MENTOR, MentorProfile.is_approved.is_(True))
+    )
     if category:
         query = query.join(MentorExpertise, MentorExpertise.mentor_id == User.id).join(
             CareerCategory, CareerCategory.id == MentorExpertise.career_category_id
@@ -146,6 +152,12 @@ def create_request(
         )
     mentor = db.get(User, payload.mentor_id)
     if not mentor or mentor.role != UserRole.MENTOR:
+        raise HTTPException(status_code=404, detail="Mentor not found")
+    mentor_profile = db.get(MentorProfile, mentor.id)
+    if not mentor_profile or not mentor_profile.is_approved:
+        # Same 404 as "mentor not found" on purpose — an unapproved
+        # mentor shouldn't be distinguishable from a nonexistent one to
+        # a student probing IDs directly.
         raise HTTPException(status_code=404, detail="Mentor not found")
 
     req = MentorshipRequest(student_id=current_user.id, mentor_id=payload.mentor_id, message=payload.message)
@@ -299,3 +311,83 @@ def complete_session(
     db.commit()
     db.refresh(session)
     return session
+
+
+# --- admin: mentor approval ---
+
+
+@admin_router.get("", response_model=list[AdminMentorRead])
+def list_all_mentors(
+    current_user: User = Depends(require_admin), db: Session = Depends(get_db)
+) -> list[AdminMentorRead]:
+    rows = (
+        db.query(User, MentorProfile)
+        .join(MentorProfile, MentorProfile.user_id == User.id)
+        .filter(User.role == UserRole.MENTOR)
+        .order_by(MentorProfile.is_approved.asc(), User.created_at.desc())
+        .all()
+    )
+    return [
+        AdminMentorRead(
+            user_id=user.id,
+            full_name=user.full_name,
+            email=user.email,
+            mobile_number=user.mobile_number,
+            bio=profile.bio,
+            is_approved=profile.is_approved,
+            created_at=user.created_at,
+        )
+        for user, profile in rows
+    ]
+
+
+@admin_router.post("/{user_id}/approve", response_model=AdminMentorRead)
+def approve_mentor(
+    user_id: uuid.UUID,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> AdminMentorRead:
+    user = db.get(User, user_id)
+    profile = db.get(MentorProfile, user_id)
+    if not user or user.role != UserRole.MENTOR or not profile:
+        raise HTTPException(status_code=404, detail="Mentor not found")
+
+    profile.is_approved = True
+    db.add(profile)
+    db.commit()
+    db.refresh(profile)
+    return AdminMentorRead(
+        user_id=user.id,
+        full_name=user.full_name,
+        email=user.email,
+        mobile_number=user.mobile_number,
+        bio=profile.bio,
+        is_approved=profile.is_approved,
+        created_at=user.created_at,
+    )
+
+
+@admin_router.post("/{user_id}/unapprove", response_model=AdminMentorRead)
+def unapprove_mentor(
+    user_id: uuid.UUID,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> AdminMentorRead:
+    user = db.get(User, user_id)
+    profile = db.get(MentorProfile, user_id)
+    if not user or user.role != UserRole.MENTOR or not profile:
+        raise HTTPException(status_code=404, detail="Mentor not found")
+
+    profile.is_approved = False
+    db.add(profile)
+    db.commit()
+    db.refresh(profile)
+    return AdminMentorRead(
+        user_id=user.id,
+        full_name=user.full_name,
+        email=user.email,
+        mobile_number=user.mobile_number,
+        bio=profile.bio,
+        is_approved=profile.is_approved,
+        created_at=user.created_at,
+    )
