@@ -202,22 +202,31 @@ Backend:
 cd backend
 python3 -m venv .venv && . .venv/bin/activate
 pip install -r requirements-dev.txt
-pytest                      # fast, no DB needed
+pytest                      # fast unit tests + live-DB integration tests
 ```
-Covers: password hashing (incl. the bcrypt-72-byte regression), JWT
-access-token roundtrip, refresh-token generation/hashing/expiry, the
-role-enum-column metadata, and every `require_*` role dependency
-(allows its own role, 403s every other role). These do **not** exercise
-the live API endpoints or run migrations — that needs a real Postgres:
-```bash
-# with DATABASE_URL pointed at a real/local Postgres in .env
-alembic upgrade head
-uvicorn app.main:app --reload
-# then exercise /auth/register, /auth/login, /auth/refresh, /auth/logout,
-# /auth/me, /users/me/language
-```
-No endpoint-level integration test suite yet (`httpx.AsyncClient` /
-`TestClient` against a test DB) — worth adding before Phase 3 (§11).
+Two kinds of tests now run together:
+- **Unit tests** (no DB): security/JWT/OTP helpers, role-dependency
+  logic, schema validation (incl. the role-conditional registration
+  requirements), model metadata.
+- **Integration tests** (`tests/test_integration_*.py`, using the
+  `client`/`db_session`/`*_client` fixtures in `conftest.py`): run
+  against a **real local Postgres** (needs a `postgres` OS user
+  reachable via `su postgres` peer auth, matching how this repo's dev
+  DB was set up) — resets the `unity_test` database and runs the real
+  Alembic migrations (not `create_all`, since several migrations seed
+  rows routes depend on) once per test run, then isolates every
+  individual test in a rolled-back transaction. **This wipes whatever
+  was in your local `unity_test` database** — don't point
+  `DATABASE_URL` at anything you care about when running `pytest`.
+  Covers the full auth lifecycle (register -> login -> refresh ->
+  logout -> refresh-after-logout rejected) and the role-security matrix
+  (every role's protected endpoints reject every other role, and
+  reject no auth at all).
+
+Endpoint coverage beyond auth/role-security (careers, courses,
+assessment, mentorship, campaigns, announcements, school admin) is
+still verified manually per-feature during development, not by this
+suite yet -- extending it is real remaining work, not done.
 
 Frontend:
 ```bash
@@ -282,10 +291,11 @@ throughout.
 **Known gaps:**
 - AI provider (Groq) still unverified with a real live call — try from
   an environment with actual network access.
-- No live-DB automated integration test suite for most endpoints (the
-  `/ai/chat` tests are the exception, since that endpoint has no DB
-  dependency) — everything else is verified manually per-feature during
-  development, not via a CI-runnable suite.
+- A live-DB integration test suite now exists (`tests/test_integration_*.py`,
+  §9) but only covers auth lifecycle + the role-security matrix so far —
+  careers/courses/assessment/mentorship/campaigns/announcements/school
+  endpoints are still verified manually per-feature, not by this suite.
+  Extending it is real remaining work, not done.
 - Frontend test framework not chosen.
 - `states`/`districts`/`schools` structured tables still have no data;
   registration now collects school/district/state as free text instead
