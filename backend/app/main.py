@@ -13,6 +13,7 @@ from app.api.routes import (
     dashboard,
     languages,
     health,
+    locations,
     mentorship,
     parents,
     schools,
@@ -59,4 +60,5 @@ app.include_router(announcements.router)
 app.include_router(announcements.admin_router)
 app.include_router(languages.router)
 app.include_router(schools.router)
+app.include_router(locations.router)
 app.include_router(admin_users.router)

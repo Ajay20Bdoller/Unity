@@ -128,6 +128,11 @@ export interface Language {
   native_name: string;
 }
 
+export interface State {
+  id: string;
+  name: string;
+}
+
 export interface CareerCategory {
   id: string;
   key: string;
@@ -440,6 +445,7 @@ export const api = {
       body: JSON.stringify({ preferred_language }),
     }),
   languages: () => request<Language[]>("/languages"),
+  states: () => request<State[]>("/states"),
   dashboardSections: () => request<DashboardSection[]>("/dashboard/sections"),
   aiChat: (message: string, history?: ChatMessage[]) =>
     request<AIChatResponse>("/ai/chat", {

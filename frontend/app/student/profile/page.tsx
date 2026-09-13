@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { api, ApiError, type StudentProfile } from "@/lib/api";
+import { api, ApiError, type State, type StudentProfile } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,11 @@ export default function StudentProfilePage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [states, setStates] = useState<State[]>([]);
+
+  useEffect(() => {
+    api.states().then(setStates).catch(() => setStates([]));
+  }, []);
 
   useEffect(() => {
     if (user?.role === "student") {
@@ -141,11 +146,19 @@ export default function StudentProfilePage() {
               />
             </Field>
             <Field label="State" htmlFor="state">
-              <Input
+              <select
                 id="state"
                 value={profile.state ?? ""}
                 onChange={(e) => set("state", e.target.value)}
-              />
+                className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/40"
+              >
+                <option value="">Select</option>
+                {states.map((s) => (
+                  <option key={s.id} value={s.name}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
             </Field>
             <Field label="Country" htmlFor="country">
               <Input

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth, ApiError } from "@/lib/auth-context";
 import { useLanguage } from "@/lib/language-context";
-import type { RegisterInput, UserRole } from "@/lib/api";
+import { api, type RegisterInput, type State, type UserRole } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/field";
@@ -56,6 +56,11 @@ export default function RegisterPage() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [states, setStates] = useState<State[]>([]);
+
+  useEffect(() => {
+    api.states().then(setStates).catch(() => setStates([]));
+  }, []);
 
   const roles: { value: UserRole; label: string }[] = [
     { value: "student", label: t("register.roleStudent") },
@@ -262,12 +267,20 @@ export default function RegisterPage() {
                     />
                   </Field>
                   <Field label={t("register.stateLabel")} htmlFor="state">
-                    <Input
+                    <select
                       id="state"
                       required
                       value={form.state}
                       onChange={(e) => set("state", e.target.value)}
-                    />
+                      className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    >
+                      <option value="">{t("register.relationSelect")}</option>
+                      {states.map((s) => (
+                        <option key={s.id} value={s.name}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
                   </Field>
                   <Field label={t("register.countryLabel")} htmlFor="country">
                     <Input
