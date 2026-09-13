@@ -98,6 +98,9 @@ export function SiteNav() {
           </Link>
           {user?.role === "student" && (
             <>
+              <Link href="/student/profile" className="rounded-md px-2 py-1.5 hover:bg-border/30">
+                {t("nav.myProfile")}
+              </Link>
               <Link href="/student/assessment" className="rounded-md px-2 py-1.5 hover:bg-border/30">
                 {t("nav.assessment")}
               </Link>
@@ -119,6 +122,16 @@ export function SiteNav() {
           {user?.role === "parent" && (
             <Link href="/parent/students" className="rounded-md px-2 py-1.5 hover:bg-border/30">
               {t("nav.myStudents")}
+            </Link>
+          )}
+          {user?.role === "school_admin" && (
+            <Link href="/school/students" className="rounded-md px-2 py-1.5 hover:bg-border/30">
+              {t("nav.myStudents")}
+            </Link>
+          )}
+          {user && (
+            <Link href="/announcements" className="rounded-md px-2 py-1.5 hover:bg-border/30">
+              {t("nav.announcements")}
             </Link>
           )}
           {user?.role === "admin" && (

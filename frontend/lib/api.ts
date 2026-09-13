@@ -312,6 +312,53 @@ export interface MentorshipSession {
   completed: boolean;
 }
 
+export interface SchoolAdminStudent {
+  user_id: string;
+  full_name: string;
+  email: string | null;
+  mobile_number: string | null;
+  class_level: string | null;
+  district: string | null;
+  state: string | null;
+}
+
+export interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  language_code: string;
+  published_at: string | null;
+}
+
+export interface StudentProfile {
+  user_id: string;
+  date_of_birth: string | null;
+  class_level: string | null;
+  school_name: string | null;
+  address: string | null;
+  district: string | null;
+  state: string | null;
+  country: string | null;
+  parent_name: string | null;
+  parent_relation: string | null;
+  gender: string | null;
+  profile_photo_url: string | null;
+}
+
+export interface StudentProfileUpdateInput {
+  date_of_birth?: string;
+  class_level?: string;
+  school_name?: string;
+  address?: string;
+  district?: string;
+  state?: string;
+  country?: string;
+  parent_name?: string;
+  parent_relation?: string;
+  gender?: string;
+  profile_photo_url?: string;
+}
+
 // --- admin ---
 
 export type AdminUser = User;
@@ -496,6 +543,17 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ notes }),
     }),
+
+  // school admin
+  mySchoolStudents: () => request<SchoolAdminStudent[]>("/schools/me/students"),
+
+  // student profile
+  myStudentProfile: () => request<StudentProfile>("/students/me"),
+  updateMyStudentProfile: (payload: StudentProfileUpdateInput) =>
+    request<StudentProfile>("/students/me", { method: "PATCH", body: JSON.stringify(payload) }),
+
+  // announcements
+  myAnnouncements: () => request<Announcement[]>("/announcements"),
 
   // admin
   adminUsers: () => request<AdminUser[]>("/admin/users"),

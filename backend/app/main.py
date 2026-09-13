@@ -15,6 +15,7 @@ from app.api.routes import (
     health,
     mentorship,
     parents,
+    schools,
     students,
     users,
 )
@@ -57,4 +58,5 @@ app.include_router(mentorship.session_router)
 app.include_router(announcements.router)
 app.include_router(announcements.admin_router)
 app.include_router(languages.router)
+app.include_router(schools.router)
 app.include_router(admin_users.router)

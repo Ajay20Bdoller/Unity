@@ -295,6 +295,10 @@ throughout.
 - In-memory AI rate limiter is single-process only.
 - Assessment question authoring (weighted options) has no admin form
   yet — flagged in the admin page itself, not faked.
+- School-student matching (`GET /schools/me/students`) is by exact
+  (case-insensitive) `school_name` text match — no verified link, so a
+  spelling difference between a student's and a school admin's typed
+  school name means that student silently doesn't show up.
 - Real i18n now exists (`frontend/lib/i18n/{en,hi,bn,te,pa}.json` +
   `lib/language-context.tsx`'s `t()` hook, all 5 files key-parity
   checked) but is only wired into SiteNav, the homepage, and login/
