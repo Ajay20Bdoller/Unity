@@ -219,14 +219,17 @@ Two kinds of tests now run together:
   was in your local `unity_test` database** — don't point
   `DATABASE_URL` at anything you care about when running `pytest`.
   Covers the full auth lifecycle (register -> login -> refresh ->
-  logout -> refresh-after-logout rejected) and the role-security matrix
+  logout -> refresh-after-logout rejected), the role-security matrix
   (every role's protected endpoints reject every other role, and
-  reject no auth at all).
+  reject no auth at all), course enrollment/progress/continue-learning,
+  assessment submission/scoring/weight-hiding, and the full guardian-
+  relationship-to-OTP-consent-to-mentorship-request-to-session-to-
+  feedback chain (the most business-logic-heavy flow in the app).
 
-Endpoint coverage beyond auth/role-security (careers, courses,
-assessment, mentorship, campaigns, announcements, school admin) is
-still verified manually per-feature during development, not by this
-suite yet -- extending it is real remaining work, not done.
+Endpoint coverage beyond the above (careers, campaigns, announcements,
+school admin, dashboard config) is still verified manually per-feature
+during development, not by this suite yet -- extending it is real
+remaining work, not done.
 
 Frontend:
 ```bash
@@ -291,11 +294,13 @@ throughout.
 **Known gaps:**
 - AI provider (Groq) still unverified with a real live call — try from
   an environment with actual network access.
-- A live-DB integration test suite now exists (`tests/test_integration_*.py`,
-  §9) but only covers auth lifecycle + the role-security matrix so far —
-  careers/courses/assessment/mentorship/campaigns/announcements/school
-  endpoints are still verified manually per-feature, not by this suite.
-  Extending it is real remaining work, not done.
+- A live-DB integration test suite exists (`tests/test_integration_*.py`,
+  §9) covering auth lifecycle, the role-security matrix, course
+  enrollment/progress/continue-learning, assessment submission/scoring/
+  weight-hiding, and the full guardian-consent-to-mentorship-to-session-
+  to-feedback chain. Careers/campaigns/announcements/school-admin/
+  dashboard-config endpoints are still verified manually only —
+  extending coverage to those is real remaining work, not done.
 - Frontend test framework not chosen.
 - `states`/`districts`/`schools` structured tables still have no data;
   registration now collects school/district/state as free text instead
