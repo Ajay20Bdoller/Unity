@@ -9,7 +9,7 @@ from app.models.user import User
 from app.schemas.ai import AIChatRequest, AIChatResponse
 from app.services.ai.base import AIProviderError
 from app.services.ai.grok import GrokProvider
-from app.services.ai.rate_limit import InMemoryRateLimiter
+from app.core.rate_limit import InMemoryRateLimiter
 from app.services.ai.service import AIService
 
 router = APIRouter(prefix="/ai", tags=["ai"])
@@ -44,7 +44,7 @@ def chat(
     current_user: User = Depends(get_current_user),
     ai_service: AIService = Depends(get_ai_service),
 ) -> AIChatResponse:
-    _rate_limiter.check(current_user.id)
+    _rate_limiter.check(str(current_user.id))
 
     started = time.monotonic()
     try:

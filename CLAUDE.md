@@ -110,6 +110,12 @@ the access token server-side (see `require_*` deps in §4).
 
 ## 5. Security rules
 
+- **Rate limiting:** per-IP (via X-Forwarded-For, falling back to
+  request.client — see `core/rate_limit.py`), not per-account, since an
+  attacker doesn't need a valid account to hammer these: login 10/15min,
+  register 5/hour, forgot-password OTP request 5/hour. Same
+  `InMemoryRateLimiter` the AI chat endpoint already used, generalized
+  and moved to `app/core/` since it's no longer AI-specific.
 - **Mentor approval:** registering as a mentor does not make you
   discoverable. `mentors.is_approved` defaults false; `GET /mentors`
   (public browsing) filters on it, and — defense in depth, not just
@@ -350,7 +356,12 @@ throughout.
   (see profiles.py docstrings) — the FK columns are reserved for a
   future structured-search feature, not currently read by anything.
 - OTP delivery is dev-mode only; no real SMS provider.
-- In-memory AI rate limiter is single-process only.
+- In-memory rate limiters (AI chat, login, register, forgot-password
+  OTP request) are single-process only — fine for one server instance,
+  not correct once this scales horizontally to multiple workers/
+  instances (each would have its own separate budget). Swap
+  `InMemoryRateLimiter` for a Redis-backed one with the same `check()`
+  interface at that point.
 - Assessment question authoring (weighted options) has no admin form
   yet — flagged in the admin page itself, not faked.
 - School-student matching (`GET /schools/me/students`) is by exact

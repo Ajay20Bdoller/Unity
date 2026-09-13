@@ -1,12 +1,13 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.core.config import get_settings
 from app.core.consent import generate_otp, hash_otp, otp_expiry
+from app.core.rate_limit import InMemoryRateLimiter, get_client_ip
 from app.core.security import (
     create_access_token,
     generate_refresh_token,
@@ -36,6 +37,14 @@ from app.schemas.auth import (
 from app.schemas.user import UserCreate, UserRead
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+# Per-IP, not per-account — an attacker doesn't need a valid account to
+# hammer these. Limits are on the generous side for real users (a
+# family sharing a connection, someone fat-fingering their password a
+# few times) while still cutting off scripted abuse.
+_login_limiter = InMemoryRateLimiter(max_requests=10, window_seconds=15 * 60)
+_register_limiter = InMemoryRateLimiter(max_requests=5, window_seconds=60 * 60)
+_forgot_password_limiter = InMemoryRateLimiter(max_requests=5, window_seconds=60 * 60)
 settings = get_settings()
 
 ACCESS_COOKIE_MAX_AGE = settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60
@@ -91,7 +100,8 @@ def _issue_tokens(db: Session, user: User) -> tuple[str, str]:
 
 
 @router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
-def register(payload: UserCreate, db: Session = Depends(get_db)) -> User:
+def register(payload: UserCreate, request: Request, db: Session = Depends(get_db)) -> User:
+    _register_limiter.check(get_client_ip(request))
     if payload.role not in SELF_REGISTERABLE_ROLES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -171,7 +181,10 @@ def register(payload: UserCreate, db: Session = Depends(get_db)) -> User:
 
 
 @router.post("/login", response_model=Token)
-def login(payload: LoginRequest, response: Response, db: Session = Depends(get_db)) -> Token:
+def login(
+    payload: LoginRequest, request: Request, response: Response, db: Session = Depends(get_db)
+) -> Token:
+    _login_limiter.check(get_client_ip(request))
     user = (
         db.query(User)
         .filter(or_(User.email == payload.identifier, User.mobile_number == payload.identifier))
@@ -244,7 +257,7 @@ def read_current_user(current_user: User = Depends(get_current_user)) -> User:
 
 @router.post("/forgot-password/request-otp", response_model=ForgotPasswordOTPResponse)
 def request_password_reset_otp(
-    payload: ForgotPasswordRequest, db: Session = Depends(get_db)
+    payload: ForgotPasswordRequest, request: Request, db: Session = Depends(get_db)
 ) -> ForgotPasswordOTPResponse:
     """Mobile number only — this platform's identifier for password
     reset, not email (see CLAUDE.md: email is optional for students).
@@ -252,6 +265,7 @@ def request_password_reset_otp(
     is registered, so this can't be used to check which numbers have
     accounts; only populates dev_otp when a matching user actually
     exists AND we're in dev mode."""
+    _forgot_password_limiter.check(get_client_ip(request))
     is_dev = settings.ENVIRONMENT == "development"
     user = db.query(User).filter(User.mobile_number == payload.mobile_number).first()
 

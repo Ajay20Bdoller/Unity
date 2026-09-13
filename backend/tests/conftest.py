@@ -28,6 +28,29 @@ TEST_DB_PASSWORD = "unity_test"
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 
 
+@pytest.fixture(autouse=True)
+def _reset_rate_limiters():
+    """The in-memory rate limiters (auth, AI) live for the whole process
+    by design — correct in production, but this pytest run is one
+    process for the *entire* suite, and TestClient requests all share
+    one fake IP. Without this, whichever test runs late enough to be
+    the 6th registration or 11th login attempt across the *whole run*
+    starts failing on an unrelated 429, not the thing it's actually
+    testing. Runs before every test; importing here (not at module
+    level) avoids loading route modules for tests that never touch
+    them."""
+    from app.api.routes.ai import _rate_limiter as ai_limiter
+    from app.api.routes.auth import (
+        _forgot_password_limiter,
+        _login_limiter,
+        _register_limiter,
+    )
+
+    for limiter in (ai_limiter, _login_limiter, _register_limiter, _forgot_password_limiter):
+        limiter.reset()
+    yield
+
+
 @pytest.fixture(scope="session")
 def db_engine():
     """Resets the test database once per test run, then runs the real
