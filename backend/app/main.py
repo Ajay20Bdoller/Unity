@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import (
     ai,
+    announcements,
     assessments,
     auth,
     campaigns,
@@ -51,3 +52,5 @@ app.include_router(mentorship.router)
 app.include_router(mentorship.mentor_router)
 app.include_router(mentorship.student_router)
 app.include_router(mentorship.session_router)
+app.include_router(announcements.router)
+app.include_router(announcements.admin_router)

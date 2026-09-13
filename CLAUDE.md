@@ -236,83 +236,76 @@ No component/e2e test framework configured yet (Vitest/Playwright etc.)
 
 ## 11. Current status & remaining phases
 
-**Done:** JWT auth with short-lived access + revocable rotating refresh
-tokens; roles STUDENT/PARENT/MENTOR/SCHOOL_ADMIN/ADMIN with admin
-self-registration blocked; identity/role-profile split; `languages`
-table (seeded) with a real FK from `users`; `states`/`districts`/
-`schools` location tables (schema only); `require_*` role dependencies;
-student onboarding; guardian relationships; per-feature consent
-(dev-mode OTP); dashboard config backend + frontend section registry;
-AI Career Assistant (backend + dashboard card, confirmed provider is
-Groq — see gaps); career library; courses (browse, enroll, progress,
-continue-learning, admin CRUD); **campaigns** (`campaigns`,
-`campaign_registrations` — best-effort acquisition attribution
-captured via an optional `campaign_key`/`source` at `/auth/register`,
-never blocks registration on an unknown/inactive key; admin
-list/create/update campaigns and view registrations per campaign);
-**`scripts/create_admin.py`** — the only way to create an ADMIN
-account, since `/auth/register` refuses ADMIN by design (this was a
-real gap — there was previously no way at all to create the first
-admin except raw SQL, discovered while testing campaigns). Next.js
-patched for CVE-2025-66478, `bcrypt` pinned.
+**Backend done (10 migrations, ~74 routes):** auth (revocable rotating
+refresh tokens), 5 roles, identity/role-profile split, languages
+(seeded), locations (schema only, no data), student onboarding,
+guardian relationships, per-feature consent (dev-mode OTP), dashboard
+config backend, AI Career Assistant (Groq-configured, unverified live —
+see gaps), career library (12 categories seeded), courses/modules/
+lessons/enrollment/progress, campaigns + best-effort attribution,
+`scripts/create_admin.py` bootstrap, career assessment (rule-based,
+10 seeded questions, exploratory results only), mentorship foundation
+(expertise/languages/requests/accept-decline/sessions/feedback, gated
+on `has_active_consent`, no chat), announcements (role + language
+filtered, draft/publish, English fallback).
 
-This closes the product's first success criterion end-to-end, including
-the frontend: register → login → dashboard → ask the AI assistant.
-Career library is backend-only so far — no frontend career pages yet
-(see gaps).
+**Frontend:** still only login/register/dashboard (2 sections: welcome,
+AI assistant card). None of career/course/assessment/mentorship/
+campaign/announcement backend work has any UI yet.
 
-Verified end-to-end against a real Postgres instance across seven
-migrations (`0001`-`0007`, each upgrade/downgrade/upgrade-tested, full
-chain also verified from scratch): the complete auth lifecycle, all 5
-role dependencies, student onboarding, guardian/consent flows,
-dashboard sections, `/ai/chat`, career browsing/i18n, courses/
-enrollment/progress, and campaigns — created a real admin via the
-bootstrap script and logged in with it, created a campaign, registered
-a student with a valid `campaign_key` (correctly attributed with its
-`source`), registered another with an unknown key (succeeded anyway,
-no crash), confirmed the registrations list showed exactly the one
-correctly-attributed row, non-admin blocked from admin campaign
-endpoints (403). 43/43 backend pytest, frontend `tsc`/lint clean.
+Every feature above was verified end-to-end against a real Postgres
+instance as it was built (migration upgrade/downgrade/upgrade, then a
+live curl run of the happy path plus its key negative cases — e.g.
+consent-gate blocking mentorship until granted, double-accept on a
+mentorship request, duplicate feedback, audience-filtered announcements
+showing the right set to each role, assessment weights never leaking
+to students). 47/47 backend pytest (unit-level only — no live-DB
+automated integration suite yet, see gaps). Frontend `tsc`/lint clean
+throughout (unaffected by this round, which was backend-only).
 
-**Known gaps to close early (foundational, not feature work):**
-- Confirmed AI provider is **Groq**, not xAI's Grok (the shared key was
-  `gsk_`-prefixed). `GROK_BASE_URL`/`GROK_MODEL` defaults updated to
-  Groq's endpoint and a real Groq model. **Still unverified live** — this
-  sandbox's network egress is a fixed domain allowlist that blocks both
-  `api.groq.com` and `api.x.ai` (confirmed via direct curl: HTTP 403,
-  `x-deny-reason: host_not_allowed`, not a timeout, not an auth failure).
-  The actual chat completion call needs to be tried from an environment
-  with real network access (the project owner's machine, Claude Code, a
-  CI runner) before trusting it works.
-- Backend endpoint-level integration tests against a *live DB* still
-  don't exist as an automated suite (flows verified manually via curl).
-- Frontend test framework decision.
-- `states`/`districts`/`schools` have no data yet.
-- No frontend UI for career browsing, courses, or campaigns yet —
-  backend only.
-- No in-app way for an existing admin to create another admin yet
-  (only the CLI script) — a real "admin creates admin" API is future
-  work once the admin UI phase happens.
-- OTP delivery is dev-mode only.
+**Known gaps:**
+- **AI provider unverified live.** Confirmed Groq (`gsk_`-prefixed key,
+  not xAI's Grok), `GROK_BASE_URL`/`GROK_MODEL` set accordingly — but
+  this sandbox's network egress blocks both `api.groq.com` and
+  `api.x.ai` outright (HTTP 403, `x-deny-reason: host_not_allowed`).
+  Try the real call from an environment with actual network access.
+- No frontend UI at all for: career browsing, courses, assessment,
+  mentorship, campaigns, announcements. This is the single biggest
+  remaining chunk of work — arguably bigger than everything backend
+  above combined.
+- No in-app "admin creates another admin" API — only the CLI script.
+- No live-DB automated integration test suite (endpoint tests exist
+  only for `/ai/chat`, which has no DB dependency). Everything else was
+  verified manually via curl during development, not via CI-runnable
+  tests.
+- `states`/`districts`/`schools` have no data (seed/import mechanism
+  not built).
+- OTP delivery is dev-mode only; no real SMS provider.
 - In-memory AI rate limiter is single-process only.
+- Frontend test framework not chosen.
+- i18n frontend infra (key-based translation files) not started —
+  backend translation tables (careers) and language-scoped rows
+  (announcements) exist, but nothing renders them in a UI yet.
 
-**Remaining feature phases (roughly in order):**
-1. Career assessment (rule-based scoring, not AI, ~10-15 seed questions).
-2. Mentorship foundation (profile, languages, expertise, availability,
-   manual/admin matching — no open chat; gate on `has_active_consent`).
-3. Location seed data (states/districts/schools import mechanism).
-4. Announcements, admin APIs for everything above, comprehensive backend
-   test suite, then the rest of the frontend (career browsing UI,
-   student onboarding UI, course/lesson UI, assessment UI, mentorship,
-   parent UI, admin UI, i18n for all 5 languages), then a full
-   end-to-end verification pass.
-
-Note: lesson content_type includes QUIZ as a marker only — no
-structured question builder for in-lesson quizzes yet. That's
-deliberately not duplicated with the separate Assessment feature (§11
-next item); revisit if a real product need for lesson-level quizzes
-shows up.
-
+**Remaining work, roughly in order of what unblocks the most:**
+1. **Frontend build-out** — this is the real remaining project size.
+   Needs, at minimum: career browsing + detail pages, course/lesson
+   pages with progress UI, assessment flow (intro → questions →
+   result), mentorship (browse mentors, request, view status), parent
+   UI (linked students, consent status/actions), admin UI (all the
+   admin endpoints above currently have zero UI), announcements feed,
+   and i18n plumbing for all 5 languages.
+2. Location seed data (a real states/districts/schools import).
+3. A live-DB integration test suite (currently all verification is
+   manual/curl-based, which doesn't run in CI).
+4. Verify the AI provider actually answers, from a networked
+   environment.
+5. A full end-to-end audit pass once the above exists: role-security
+   matrix (every role against every other role's endpoints), all 5
+   languages checked in the UI, performance/N+1 pass, error-handling
+   pass (400/401/403/404/409/422/500 all return clean messages, no
+   stack traces) — this is what doc-21 actually asks for, and it can't
+   be done honestly until there's a frontend to run it against.
 
 ## 12. Environment
 

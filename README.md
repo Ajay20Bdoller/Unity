@@ -57,28 +57,10 @@ security/database rules, and the full phased build plan.
 
 ## Status
 
-- [x] JWT auth: register / login / refresh (rotating, revocable,
-      frontend auto-retries on 401) / logout / me
-- [x] Roles: STUDENT, PARENT, MENTOR, SCHOOL_ADMIN, ADMIN (ADMIN not
-      self-registerable) with `require_*` authorization dependencies
-- [x] Identity/role-profile split: `users` + `students`/`parents`/
-      `mentors`/`school_admin_profiles`
-- [x] `languages` table (seeded) + `PATCH /users/me/language`
-- [x] `states`/`districts`/`schools` tables (schema only, no data yet)
-- [x] Student onboarding, guardian relationships, per-feature consent
-      (dev-mode OTP)
-- [x] Dashboard config backend + registry-driven frontend rendering
-- [x] AI Career Assistant (backend + dashboard card) — needs a real
-      `GROK_API_KEY` to actually answer (see CLAUDE.md §11)
-- [x] Career library (categories, careers, translations, related
-      careers, student interests) — backend only, no frontend UI yet
-- [x] Courses, modules, lessons (video/article/quiz/external),
-      enrollment, lesson progress, continue-learning — backend only
-- [x] Campaigns + registration source tracking (best-effort attribution
-      at registration, never blocks account creation)
-- [x] Admin bootstrap script (`scripts/create_admin.py`) — the only way
-      to create an ADMIN account
-- [ ] Assessment, mentorship, announcements, remaining admin APIs/UI,
-      i18n
+Backend: auth, onboarding, guardian/consent, dashboard config, AI
+assistant, career library, courses, campaigns, assessment, mentorship,
+announcements — see [`CLAUDE.md`](./CLAUDE.md) §11 for full detail and
+honest gaps.
 
-See [`CLAUDE.md`](./CLAUDE.md) §11 for the full phased plan.
+Frontend: only login/register/dashboard so far — this is the biggest
+remaining chunk of work, not the backend.

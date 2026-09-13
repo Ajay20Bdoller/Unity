@@ -1,3 +1,4 @@
+from app.models.announcement import Announcement, PublishStatus  # noqa: F401
 from app.models.assessment import (  # noqa: F401
     Assessment,
     AssessmentQuestion,
