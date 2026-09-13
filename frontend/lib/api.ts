@@ -294,6 +294,63 @@ export interface MentorshipSession {
   completed: boolean;
 }
 
+// --- admin ---
+
+export type AdminUser = User;
+
+export interface AdminCourse extends CourseListItem {
+  published?: boolean;
+}
+
+export type CampaignType = "school" | "coaching" | "community" | "online" | "referral";
+
+export interface Campaign {
+  id: string;
+  key: string;
+  name: string;
+  campaign_type: CampaignType;
+  active: boolean;
+  created_at: string;
+}
+
+export interface CampaignRegistration {
+  id: string;
+  user_id: string;
+  school_id: string | null;
+  source: string | null;
+  created_at: string;
+}
+
+export type PublishStatus = "draft" | "published";
+
+export interface AdminAnnouncement {
+  id: string;
+  title: string;
+  content: string;
+  language_code: string;
+  published_at: string | null;
+  audience: string[] | null;
+  publish_status: PublishStatus;
+}
+
+export interface AdminDashboardSection {
+  id: string;
+  key: string;
+  name: string;
+  description: string | null;
+  component_key: string;
+  default_config: Record<string, unknown> | null;
+}
+
+export interface RoleDashboardSection {
+  id: string;
+  dashboard_section_id: string;
+  role: string;
+  enabled: boolean;
+  display_order: number;
+  config_override: Record<string, unknown> | null;
+}
+
 export const api = {
   register: (input: RegisterInput) =>
     request<User>("/auth/register", {
@@ -420,5 +477,59 @@ export const api = {
     request<MentorshipSession>(`/mentors/me/requests/${requestId}/sessions`, {
       method: "POST",
       body: JSON.stringify({ notes }),
+    }),
+
+  // admin
+  adminUsers: () => request<AdminUser[]>("/admin/users"),
+  adminSetUserActive: (userId: string, isActive: boolean) =>
+    request<AdminUser>(`/admin/users/${userId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ is_active: isActive }),
+    }),
+  adminCourses: () => request<AdminCourse[]>("/admin/courses"),
+  adminCreateAssessment: (payload: { title: string; description: string }) =>
+    request<AssessmentSummary>("/admin/assessments", { method: "POST", body: JSON.stringify(payload) }),
+  adminCreateCourse: (payload: { slug: string; title: string; description: string }) =>
+    request<AdminCourse>("/admin/courses", { method: "POST", body: JSON.stringify(payload) }),
+  adminUpdateCourse: (courseId: string, payload: { published?: boolean }) =>
+    request<AdminCourse>(`/admin/courses/${courseId}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+  adminCreateCareerCategory: (payload: { key: string; name: string }) =>
+    request<CareerCategory>("/admin/careers/categories", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  adminCreateCareer: (payload: {
+    category_id: string;
+    slug: string;
+    title: string;
+    description: string;
+  }) => request<CareerListItem>("/admin/careers", { method: "POST", body: JSON.stringify(payload) }),
+  adminCampaigns: () => request<Campaign[]>("/admin/campaigns"),
+  adminCreateCampaign: (payload: { key: string; name: string; campaign_type: CampaignType }) =>
+    request<Campaign>("/admin/campaigns", { method: "POST", body: JSON.stringify(payload) }),
+  adminCampaignRegistrations: (campaignId: string) =>
+    request<CampaignRegistration[]>(`/admin/campaigns/${campaignId}/registrations`),
+  adminAnnouncements: () => request<AdminAnnouncement[]>("/admin/announcements"),
+  adminCreateAnnouncement: (payload: { title: string; content: string; audience?: string[] }) =>
+    request<AdminAnnouncement>("/admin/announcements", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  adminPublishAnnouncement: (id: string) =>
+    request<AdminAnnouncement>(`/admin/announcements/${id}/publish`, { method: "POST" }),
+  adminDashboardSections: () => request<AdminDashboardSection[]>("/admin/dashboard-sections"),
+  adminSectionRoles: (sectionId: string) =>
+    request<RoleDashboardSection[]>(`/admin/dashboard-sections/${sectionId}/roles`),
+  adminUpsertSectionRole: (
+    sectionId: string,
+    role: string,
+    payload: { enabled: boolean; display_order: number }
+  ) =>
+    request<RoleDashboardSection>(`/admin/dashboard-sections/${sectionId}/roles/${role}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
     }),
 };

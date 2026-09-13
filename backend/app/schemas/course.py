@@ -44,6 +44,10 @@ class CourseListItem(BaseModel):
     thumbnail_url: str | None
 
 
+class CourseAdminRead(CourseListItem):
+    published: bool
+
+
 class CourseDetail(CourseListItem):
     modules: list[ModuleRead]
     language: str = "en"

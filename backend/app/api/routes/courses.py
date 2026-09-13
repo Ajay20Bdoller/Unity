@@ -9,6 +9,7 @@ from app.models.course import Course, Enrollment, Lesson, LessonProgress, Module
 from app.models.user import User
 from app.schemas.course import (
     ContinueLearningItem,
+    CourseAdminRead,
     CourseCreate,
     CourseDetail,
     CourseDetailWithProgress,
@@ -266,7 +267,14 @@ def continue_learning(
 # --- admin CRUD ---
 
 
-@admin_router.post("", response_model=CourseListItem, status_code=201)
+@admin_router.get("", response_model=list[CourseAdminRead])
+def list_all_courses_admin(
+    current_user: User = Depends(require_admin), db: Session = Depends(get_db)
+) -> list[Course]:
+    return db.query(Course).order_by(Course.created_at.desc()).all()
+
+
+@admin_router.post("", response_model=CourseAdminRead, status_code=201)
 def create_course(
     payload: CourseCreate,
     current_user: User = Depends(require_admin),
@@ -281,7 +289,7 @@ def create_course(
     return course
 
 
-@admin_router.patch("/{course_id}", response_model=CourseListItem)
+@admin_router.patch("/{course_id}", response_model=CourseAdminRead)
 def update_course(
     course_id: uuid.UUID,
     payload: CourseUpdate,

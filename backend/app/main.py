@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import (
+    admin_users,
     ai,
     announcements,
     assessments,
@@ -56,3 +57,4 @@ app.include_router(mentorship.session_router)
 app.include_router(announcements.router)
 app.include_router(announcements.admin_router)
 app.include_router(languages.router)
+app.include_router(admin_users.router)
