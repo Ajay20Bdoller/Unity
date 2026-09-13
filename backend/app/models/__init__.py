@@ -1,3 +1,9 @@
+from app.models.assessment import (  # noqa: F401
+    Assessment,
+    AssessmentQuestion,
+    AssessmentResponse,
+    AssessmentResult,
+)
 from app.models.campaign import Campaign, CampaignRegistration, CampaignType  # noqa: F401
 from app.models.career import (  # noqa: F401
     Career,

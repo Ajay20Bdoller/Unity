@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import (
     ai,
+    assessments,
     auth,
     campaigns,
     careers,
@@ -42,3 +43,6 @@ app.include_router(courses.router)
 app.include_router(courses.student_router)
 app.include_router(courses.admin_router)
 app.include_router(campaigns.router)
+app.include_router(assessments.router)
+app.include_router(assessments.student_router)
+app.include_router(assessments.admin_router)
