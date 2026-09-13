@@ -120,13 +120,30 @@ def _register_and_login(client, payload):
     return reg.json()
 
 
+def _independent_client(db_session):
+    """A fresh TestClient with its own cookie jar. Depending on `client`
+    (rather than `db_session` directly) as well would be redundant — the
+    override it installs lives on the shared `app` object, not on any
+    particular TestClient instance, so every TestClient(app) create here
+    already sees the same isolated session. The role fixtures below
+    depend on `client` anyway, only to guarantee ordering: the override
+    must be installed before any of them registers a user."""
+    from app.main import app
+
+    return TestClient(app)
+
+
 @pytest.fixture()
-def student_client(client):
-    """Logged-in TestClient for a fresh student. Cookies persist across
-    requests on the same TestClient instance, so every call this client
-    makes afterward is authenticated as this student."""
+def student_client(client, db_session):
+    """Its own TestClient/cookie-jar — independent from `client` and
+    every other *_client fixture, so using several of these together in
+    one test doesn't have one login silently clobber another's cookies
+    (that was a real bug here: every *_client fixture originally reused
+    the single shared `client`, so whichever fixture logged in *last*
+    won every other fixture's session too)."""
+    independent = _independent_client(db_session)
     _register_and_login(
-        client,
+        independent,
         {
             "full_name": "Role Matrix Student",
             "role": "student",
@@ -141,13 +158,14 @@ def student_client(client):
             "state": "s",
         },
     )
-    return client
+    return independent
 
 
 @pytest.fixture()
-def parent_client(client):
+def parent_client(client, db_session):
+    independent = _independent_client(db_session)
     _register_and_login(
-        client,
+        independent,
         {
             "full_name": "Role Matrix Parent",
             "role": "parent",
@@ -158,13 +176,14 @@ def parent_client(client):
             "relation_to_student": "Mother",
         },
     )
-    return client
+    return independent
 
 
 @pytest.fixture()
-def mentor_client(client):
+def mentor_client(client, db_session):
+    independent = _independent_client(db_session)
     _register_and_login(
-        client,
+        independent,
         {
             "full_name": "Role Matrix Mentor",
             "role": "mentor",
@@ -174,13 +193,14 @@ def mentor_client(client):
             "date_of_birth": "1990-01-01",
         },
     )
-    return client
+    return independent
 
 
 @pytest.fixture()
-def school_admin_client(client):
+def school_admin_client(client, db_session):
+    independent = _independent_client(db_session)
     _register_and_login(
-        client,
+        independent,
         {
             "full_name": "Role Matrix School Admin",
             "role": "school_admin",
@@ -192,14 +212,14 @@ def school_admin_client(client):
             "school_location": "Location",
         },
     )
-    return client
+    return independent
 
 
 @pytest.fixture()
 def admin_client(client, db_session):
     """Admin accounts can't self-register, so this inserts one directly
-    via the same isolated session the client uses, matching what
-    scripts/create_admin.py does in real usage."""
+    via the same isolated session every fixture here shares, matching
+    what scripts/create_admin.py does in real usage."""
     from app.core.security import hash_password
     from app.models.user import User, UserRole
 
@@ -212,9 +232,10 @@ def admin_client(client, db_session):
     db_session.add(user)
     db_session.commit()
 
-    login = client.post(
+    independent = _independent_client(db_session)
+    login = independent.post(
         "/auth/login",
         json={"identifier": "rolematrix-admin@example.com", "password": "TestPass123!"},
     )
     assert login.status_code == 200, login.text
-    return client
+    return independent

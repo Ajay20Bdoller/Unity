@@ -218,17 +218,25 @@ Two kinds of tests now run together:
   individual test in a rolled-back transaction. **This wipes whatever
   was in your local `unity_test` database** — don't point
   `DATABASE_URL` at anything you care about when running `pytest`.
-  Covers the full auth lifecycle (register -> login -> refresh ->
-  logout -> refresh-after-logout rejected), the role-security matrix
-  (every role's protected endpoints reject every other role, and
-  reject no auth at all), course enrollment/progress/continue-learning,
-  assessment submission/scoring/weight-hiding, and the full guardian-
-  relationship-to-OTP-consent-to-mentorship-request-to-session-to-
-  feedback chain (the most business-logic-heavy flow in the app).
+  Covers the full auth lifecycle, the role-security matrix, course
+  enrollment/progress/continue-learning, assessment submission/scoring/
+  weight-hiding, the full guardian-consent-to-mentorship-to-session-to-
+  feedback chain, career browsing/i18n-fallback/interest-toggle/admin
+  CRUD, campaign attribution, announcement audience filtering, and
+  dashboard-section admin toggling.
+  **Fixture gotcha already hit once, now fixed and worth knowing:**
+  each `*_client` fixture must get its own `TestClient(app)` instance.
+  An earlier version had them all share one `client` fixture's cookie
+  jar — whichever role fixture logged in *last* silently overwrote
+  every other one's session, so e.g. `admin_client` in a test that also
+  used `student_client` was actually making requests as the student.
+  Some of those tests still passed anyway (asserting "some non-owning
+  role gets 403" doesn't care which role that turns out to be), so this
+  didn't fail loudly — it was caught by three tests whose assertions
+  actually depended on which specific role was calling.
 
-Endpoint coverage beyond the above (careers, campaigns, announcements,
-school admin, dashboard config) is still verified manually per-feature
-during development, not by this suite yet -- extending it is real
+Remaining manual-only areas: dashboard-section per-role config beyond
+toggling, and a few smaller admin actions. Extending further is real
 remaining work, not done.
 
 Frontend:
@@ -297,10 +305,12 @@ throughout.
 - A live-DB integration test suite exists (`tests/test_integration_*.py`,
   §9) covering auth lifecycle, the role-security matrix, course
   enrollment/progress/continue-learning, assessment submission/scoring/
-  weight-hiding, and the full guardian-consent-to-mentorship-to-session-
-  to-feedback chain. Careers/campaigns/announcements/school-admin/
-  dashboard-config endpoints are still verified manually only —
-  extending coverage to those is real remaining work, not done.
+  weight-hiding, the full guardian-consent-to-mentorship-to-session-to-
+  feedback chain, career browsing/i18n-fallback/interest-toggle/admin
+  CRUD, campaign attribution (valid and unknown keys), announcement
+  audience filtering, and dashboard-section admin toggling. Dashboard-
+  section per-role config UI and a few smaller admin actions are still
+  manual-only — extending further is real remaining work, not done.
 - Frontend test framework not chosen.
 - `states`/`districts`/`schools` structured tables still have no data;
   registration now collects school/district/state as free text instead
