@@ -117,6 +117,9 @@ export function SiteNav() {
               <Link href="/mentor/requests" className="rounded-md px-2 py-1.5 hover:bg-border/30">
                 {t("nav.requests")}
               </Link>
+              <Link href="/mentor/sessions" className="rounded-md px-2 py-1.5 hover:bg-border/30">
+                {t("nav.sessions")}
+              </Link>
             </>
           )}
           {user?.role === "parent" && (

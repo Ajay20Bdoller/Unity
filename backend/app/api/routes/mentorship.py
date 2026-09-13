@@ -29,6 +29,7 @@ from app.schemas.mentorship import (
     MentorshipRequestRead,
     MentorshipSessionCreate,
     MentorshipSessionRead,
+    MentorshipSessionWithContext,
 )
 
 router = APIRouter(prefix="/mentors", tags=["mentors"])
@@ -253,3 +254,48 @@ def give_feedback(
     db.commit()
     db.refresh(feedback)
     return feedback
+
+
+@mentor_router.get("/sessions", response_model=list[MentorshipSessionWithContext])
+def list_my_sessions(
+    current_user: User = Depends(require_mentor), db: Session = Depends(get_db)
+) -> list[MentorshipSessionWithContext]:
+    rows = (
+        db.query(MentorshipSession, MentorshipRequest)
+        .join(MentorshipRequest, MentorshipRequest.id == MentorshipSession.mentorship_request_id)
+        .filter(MentorshipRequest.mentor_id == current_user.id)
+        .order_by(MentorshipSession.created_at.desc())
+        .all()
+    )
+    return [
+        MentorshipSessionWithContext(
+            id=session.id,
+            mentorship_request_id=session.mentorship_request_id,
+            scheduled_at=session.scheduled_at,
+            notes=session.notes,
+            completed=session.completed,
+            student_id=req.student_id,
+            request_message=req.message,
+        )
+        for session, req in rows
+    ]
+
+
+@session_router.post("/{session_id}/complete", response_model=MentorshipSessionRead)
+def complete_session(
+    session_id: uuid.UUID,
+    current_user: User = Depends(require_mentor),
+    db: Session = Depends(get_db),
+) -> MentorshipSession:
+    session = db.get(MentorshipSession, session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    req = db.get(MentorshipRequest, session.mentorship_request_id)
+    if not req or req.mentor_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    session.completed = True
+    db.add(session)
+    db.commit()
+    db.refresh(session)
+    return session

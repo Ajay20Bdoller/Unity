@@ -52,6 +52,11 @@ class MentorshipSessionRead(BaseModel):
     completed: bool
 
 
+class MentorshipSessionWithContext(MentorshipSessionRead):
+    student_id: uuid.UUID
+    request_message: str
+
+
 class MentorshipFeedbackCreate(BaseModel):
     rating: int = Field(ge=1, le=5)
     comments: str | None = None

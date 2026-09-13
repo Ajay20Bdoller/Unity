@@ -312,6 +312,11 @@ export interface MentorshipSession {
   completed: boolean;
 }
 
+export interface MentorshipSessionWithContext extends MentorshipSession {
+  student_id: string;
+  request_message: string;
+}
+
 export interface SchoolAdminStudent {
   user_id: string;
   full_name: string;
@@ -543,6 +548,9 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ notes }),
     }),
+  myMentorSessions: () => request<MentorshipSessionWithContext[]>("/mentors/me/sessions"),
+  completeMentorshipSession: (sessionId: string) =>
+    request<MentorshipSession>(`/mentorship-sessions/${sessionId}/complete`, { method: "POST" }),
 
   // school admin
   mySchoolStudents: () => request<SchoolAdminStudent[]>("/schools/me/students"),
@@ -565,6 +573,18 @@ export const api = {
   adminCourses: () => request<AdminCourse[]>("/admin/courses"),
   adminCreateAssessment: (payload: { title: string; description: string }) =>
     request<AssessmentSummary>("/admin/assessments", { method: "POST", body: JSON.stringify(payload) }),
+  adminAddAssessmentQuestion: (
+    assessmentId: string,
+    payload: {
+      question_text: string;
+      display_order: number;
+      options: { value: string; label: string; weights: Record<string, number> }[];
+    }
+  ) =>
+    request<{ id: string; question_text: string }>(`/admin/assessments/${assessmentId}/questions`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
   adminCreateCourse: (payload: { slug: string; title: string; description: string }) =>
     request<AdminCourse>("/admin/courses", { method: "POST", body: JSON.stringify(payload) }),
   adminUpdateCourse: (courseId: string, payload: { published?: boolean }) =>
