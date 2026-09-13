@@ -57,10 +57,9 @@ security/database rules, and the full phased build plan.
 
 ## Status
 
-Backend: auth, onboarding, guardian/consent, dashboard config, AI
+Backend: auth (login by email or mobile), role-specific registration
+validation, onboarding, guardian/consent, dashboard config, AI
 assistant, career library, courses, campaigns, assessment, mentorship,
-announcements — see [`CLAUDE.md`](./CLAUDE.md) §11 for full detail and
-honest gaps.
-
-Frontend: only login/register/dashboard so far — this is the biggest
-remaining chunk of work, not the backend.
+announcements, admin APIs. Frontend: role-specific registration form,
+dark/light mode, language switcher, full app + admin UI. See
+[`CLAUDE.md`](./CLAUDE.md) §11 for full detail and honest gaps.

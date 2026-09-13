@@ -7,7 +7,7 @@ import { api, ApiError, type RegisterInput, type User } from "@/lib/api";
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (identifier: string, password: string) => Promise<void>;
   register: (input: RegisterInput) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -27,8 +27,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
-  async function login(email: string, password: string) {
-    await api.login(email, password);
+  async function login(identifier: string, password: string) {
+    await api.login(identifier, password);
     const me = await api.me();
     setUser(me);
     router.push("/dashboard");
@@ -36,7 +36,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function register(input: RegisterInput) {
     await api.register(input);
-    await login(input.email, input.password);
+    const identifier = input.email ?? input.mobile_number;
+    if (!identifier) throw new Error("Registration requires an email or mobile number");
+    await login(identifier, input.password);
   }
 
   async function logout() {

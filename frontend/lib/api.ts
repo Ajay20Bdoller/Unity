@@ -72,7 +72,8 @@ export type UserRole = "student" | "parent" | "mentor" | "school_admin" | "admin
 
 export interface User {
   id: string;
-  email: string;
+  email: string | null;
+  mobile_number: string | null;
   full_name: string;
   role: UserRole;
   preferred_language: string;
@@ -81,10 +82,27 @@ export interface User {
 }
 
 export interface RegisterInput {
-  email: string;
-  password: string;
   full_name: string;
   role: UserRole;
+  password: string;
+  email?: string;
+  mobile_number?: string;
+  campaign_key?: string;
+  source?: string;
+  // student
+  date_of_birth?: string; // YYYY-MM-DD
+  school_name?: string;
+  parent_name?: string;
+  parent_relation?: string;
+  address?: string;
+  district?: string;
+  state?: string;
+  country?: string;
+  // parent
+  student_name?: string;
+  relation_to_student?: string;
+  // school admin
+  school_location?: string;
 }
 
 export interface DashboardSection {
@@ -357,10 +375,10 @@ export const api = {
       method: "POST",
       body: JSON.stringify(input),
     }),
-  login: (email: string, password: string) =>
+  login: (identifier: string, password: string) =>
     request<{ access_token: string }>("/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ identifier, password }),
     }),
   logout: () => request<void>("/auth/logout", { method: "POST" }),
   me: () => request<User>("/auth/me"),

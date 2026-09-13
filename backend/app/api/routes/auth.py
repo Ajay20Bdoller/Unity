@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -32,15 +33,10 @@ settings = get_settings()
 ACCESS_COOKIE_MAX_AGE = settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60
 REFRESH_COOKIE_MAX_AGE = settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
 
-# One empty profile-row type per self-registerable role, created alongside
-# the user so "identity" and "role-specific profile" are separate from the
-# moment an account exists, never bolted on later as an afterthought.
-_PROFILE_MODEL_BY_ROLE = {
-    UserRole.STUDENT: StudentProfile,
-    UserRole.PARENT: ParentProfile,
-    UserRole.MENTOR: MentorProfile,
-    UserRole.SCHOOL_ADMIN: SchoolAdminProfile,
-}
+# Each self-registerable role gets its profile row created inline in
+# register() below, since the fields collected genuinely differ per
+# role (see UserCreate) — a generic profile_model(user_id=...) lookup
+# no longer fits once roles need different constructor arguments.
 
 
 def _set_auth_cookies(response: Response, access_token: str, raw_refresh_token: str) -> None:
@@ -94,12 +90,16 @@ def register(payload: UserCreate, db: Session = Depends(get_db)) -> User:
             detail="This role cannot be self-registered",
         )
 
-    existing = db.query(User).filter(User.email == payload.email).first()
-    if existing:
+    if payload.email and db.query(User).filter(User.email == payload.email).first():
         raise HTTPException(status_code=400, detail="Email is already registered")
+    if payload.mobile_number and db.query(User).filter(
+        User.mobile_number == payload.mobile_number
+    ).first():
+        raise HTTPException(status_code=400, detail="Mobile number is already registered")
 
     user = User(
         email=payload.email,
+        mobile_number=payload.mobile_number,
         full_name=payload.full_name,
         role=payload.role,
         preferred_language=payload.preferred_language,
@@ -108,8 +108,39 @@ def register(payload: UserCreate, db: Session = Depends(get_db)) -> User:
     db.add(user)
     db.flush()  # assigns user.id without committing yet
 
-    profile_model = _PROFILE_MODEL_BY_ROLE[payload.role]
-    db.add(profile_model(user_id=user.id))
+    if payload.role == UserRole.STUDENT:
+        db.add(
+            StudentProfile(
+                user_id=user.id,
+                date_of_birth=payload.date_of_birth,
+                school_name=payload.school_name,
+                address=payload.address,
+                district=payload.district,
+                state=payload.state,
+                country=payload.country,
+                parent_name=payload.parent_name,
+                parent_relation=payload.parent_relation,
+            )
+        )
+    elif payload.role == UserRole.PARENT:
+        db.add(
+            ParentProfile(
+                user_id=user.id,
+                student_name=payload.student_name,
+                relation_to_student=payload.relation_to_student,
+            )
+        )
+    elif payload.role == UserRole.MENTOR:
+        db.add(MentorProfile(user_id=user.id, date_of_birth=payload.date_of_birth))
+    elif payload.role == UserRole.SCHOOL_ADMIN:
+        db.add(
+            SchoolAdminProfile(
+                user_id=user.id,
+                date_of_birth=payload.date_of_birth,
+                school_name=payload.school_name,
+                school_location=payload.school_location,
+            )
+        )
 
     # Acquisition tracking is best-effort: an unknown, inactive, or
     # absent campaign_key must never block account creation.
@@ -133,9 +164,13 @@ def register(payload: UserCreate, db: Session = Depends(get_db)) -> User:
 
 @router.post("/login", response_model=Token)
 def login(payload: LoginRequest, response: Response, db: Session = Depends(get_db)) -> Token:
-    user = db.query(User).filter(User.email == payload.email).first()
+    user = (
+        db.query(User)
+        .filter(or_(User.email == payload.identifier, User.mobile_number == payload.identifier))
+        .first()
+    )
     if not user or not verify_password(payload.password, user.hashed_password):
-        raise HTTPException(status_code=401, detail="Incorrect email or password")
+        raise HTTPException(status_code=401, detail="Incorrect email/mobile number or password")
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Account is inactive")
 

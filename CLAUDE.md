@@ -110,6 +110,15 @@ the access token server-side (see `require_*` deps in §4).
 
 ## 5. Security rules
 
+- **Login identifier:** `users.email` is now nullable — a student who
+  is a minor without an email can register with just `mobile_number`
+  instead. At least one of the two is enforced by a DB CHECK constraint
+  (`ck_users_email_or_mobile`), not just application code. `/auth/
+  login` takes `identifier` (matched against either column), not
+  `email`. Every other role still requires email (enforced in
+  `UserCreate`'s role-conditional validator, not the DB — the DB only
+  enforces the universal "at least one" rule).
+
 - Passwords: never store plaintext. `passlib[bcrypt]` via
   `app/core/security.py`, minimum 8 characters enforced server-side
   (`UserCreate` validator) — never rely on the frontend's `minLength`
@@ -236,76 +245,79 @@ No component/e2e test framework configured yet (Vitest/Playwright etc.)
 
 ## 11. Current status & remaining phases
 
-**Backend done (10 migrations, ~74 routes):** auth (revocable rotating
-refresh tokens), 5 roles, identity/role-profile split, languages
-(seeded), locations (schema only, no data), student onboarding,
-guardian relationships, per-feature consent (dev-mode OTP), dashboard
-config backend, AI Career Assistant (Groq-configured, unverified live —
-see gaps), career library (12 categories seeded), courses/modules/
-lessons/enrollment/progress, campaigns + best-effort attribution,
-`scripts/create_admin.py` bootstrap, career assessment (rule-based,
-10 seeded questions, exploratory results only), mentorship foundation
-(expertise/languages/requests/accept-decline/sessions/feedback, gated
-on `has_active_consent`, no chat), announcements (role + language
-filtered, draft/publish, English fallback).
+**Backend (11 migrations, ~79 routes):** auth (revocable rotating
+refresh tokens, login by email OR mobile number), 5 roles with
+role-specific registration requirements enforced in `UserCreate`
+(student: DOB/school/parent-info/address/district/state, email
+optional; parent: email+mobile+student-info; mentor/school_admin:
+email+mobile+DOB, school_admin also school name/location), identity/
+role-profile split, languages (seeded) + a public GET /languages,
+locations (schema only, no data), student onboarding, guardian
+relationships, per-feature consent (dev-mode OTP), dashboard config
+backend + frontend section registry, AI Career Assistant (Groq-
+configured, still unverified live from this sandbox — network egress
+blocks both api.groq.com and api.x.ai), career library (12 categories
+seeded), courses/modules/lessons/enrollment/progress, campaigns +
+best-effort attribution, `scripts/create_admin.py` bootstrap +
+GET/PATCH /admin/users, career assessment (rule-based, 10 seeded
+questions), mentorship foundation (gated on `has_active_consent`, no
+chat), announcements (role + language filtered).
 
-**Frontend:** still only login/register/dashboard (2 sections: welcome,
-AI assistant card). None of career/course/assessment/mentorship/
-campaign/announcement backend work has any UI yet.
+**Frontend:** login/register (role-specific dynamic form), dashboard,
+career browsing, courses, assessment flow, mentorship (student +
+mentor), parent (linked students + consent), full admin section (users,
+careers, courses, campaigns, announcements, dashboard-sections). Dark/
+light mode (CSS-variable-based, zero per-component changes needed) and
+a language switcher live in the nav on every page including login/
+register. Fraunces (display) + Manrope (body) typography.
 
-Every feature above was verified end-to-end against a real Postgres
-instance as it was built (migration upgrade/downgrade/upgrade, then a
-live curl run of the happy path plus its key negative cases — e.g.
-consent-gate blocking mentorship until granted, double-accept on a
-mentorship request, duplicate feedback, audience-filtered announcements
-showing the right set to each role, assessment weights never leaking
-to students). 47/47 backend pytest (unit-level only — no live-DB
-automated integration suite yet, see gaps). Frontend `tsc`/lint clean
-throughout (unaffected by this round, which was backend-only).
+Every feature was verified end-to-end as it was built: migration
+upgrade/downgrade/upgrade, then a live curl (or, for anything
+client-side-logic-heavy like the refresh-retry flow and the
+registration payload shapes, a Node script replicating the frontend's
+actual code) run of the happy path plus key negative cases. 53/53
+backend pytest, frontend `tsc`/lint clean (0 errors, 0 warnings)
+throughout.
 
 **Known gaps:**
-- **AI provider unverified live.** Confirmed Groq (`gsk_`-prefixed key,
-  not xAI's Grok), `GROK_BASE_URL`/`GROK_MODEL` set accordingly — but
-  this sandbox's network egress blocks both `api.groq.com` and
-  `api.x.ai` outright (HTTP 403, `x-deny-reason: host_not_allowed`).
-  Try the real call from an environment with actual network access.
-- No frontend UI at all for: career browsing, courses, assessment,
-  mentorship, campaigns, announcements. This is the single biggest
-  remaining chunk of work — arguably bigger than everything backend
-  above combined.
-- No in-app "admin creates another admin" API — only the CLI script.
-- No live-DB automated integration test suite (endpoint tests exist
-  only for `/ai/chat`, which has no DB dependency). Everything else was
-  verified manually via curl during development, not via CI-runnable
-  tests.
-- `states`/`districts`/`schools` have no data (seed/import mechanism
-  not built).
+- AI provider (Groq) still unverified with a real live call — try from
+  an environment with actual network access.
+- No live-DB automated integration test suite for most endpoints (the
+  `/ai/chat` tests are the exception, since that endpoint has no DB
+  dependency) — everything else is verified manually per-feature during
+  development, not via a CI-runnable suite.
+- Frontend test framework not chosen.
+- `states`/`districts`/`schools` structured tables still have no data;
+  registration now collects school/district/state as free text instead
+  (see profiles.py docstrings) — the FK columns are reserved for a
+  future structured-search feature, not currently read by anything.
 - OTP delivery is dev-mode only; no real SMS provider.
 - In-memory AI rate limiter is single-process only.
-- Frontend test framework not chosen.
-- i18n frontend infra (key-based translation files) not started —
-  backend translation tables (careers) and language-scoped rows
-  (announcements) exist, but nothing renders them in a UI yet.
+- Assessment question authoring (weighted options) has no admin form
+  yet — flagged in the admin page itself, not faked.
+- i18n is UI-chrome-level only (language switcher persists a
+  preference) — actual translated UI strings/content per language
+  haven't been built; career/course translation *tables* exist but
+  nothing renders through them in the frontend yet.
+- Parent registration's `student_name` and student registration's
+  `parent_name`/`parent_relation` are informational text only, not a
+  verified link — the real link is still the separate guardian_
+  relationship + consent flow (invite by email, verify, grant consent).
+  Worth eventually reconciling (e.g., suggest a guardian invite
+  pre-filled from what the student typed) but not done yet.
 
-**Remaining work, roughly in order of what unblocks the most:**
-1. **Frontend build-out** — this is the real remaining project size.
-   Needs, at minimum: career browsing + detail pages, course/lesson
-   pages with progress UI, assessment flow (intro → questions →
-   result), mentorship (browse mentors, request, view status), parent
-   UI (linked students, consent status/actions), admin UI (all the
-   admin endpoints above currently have zero UI), announcements feed,
-   and i18n plumbing for all 5 languages.
-2. Location seed data (a real states/districts/schools import).
-3. A live-DB integration test suite (currently all verification is
-   manual/curl-based, which doesn't run in CI).
-4. Verify the AI provider actually answers, from a networked
+**Remaining work, roughly in order:**
+1. Location seed data (a real states/districts/schools import) and,
+   once that exists, deciding whether to switch student/school-admin
+   registration from free text to structured FK pickers.
+2. A live-DB integration test suite (currently all verification is
+   manual/curl/Node-script-based, which doesn't run in CI).
+3. Verify the AI provider actually answers, from a networked
    environment.
-5. A full end-to-end audit pass once the above exists: role-security
-   matrix (every role against every other role's endpoints), all 5
-   languages checked in the UI, performance/N+1 pass, error-handling
-   pass (400/401/403/404/409/422/500 all return clean messages, no
-   stack traces) — this is what doc-21 actually asks for, and it can't
-   be done honestly until there's a frontend to run it against.
+4. Real i18n: translated UI strings for all 5 languages, and wiring
+   the existing career/course translation tables into the frontend.
+5. A full end-to-end audit pass: role-security matrix, all 5 languages
+   checked in the UI, performance/N+1 pass, error-handling pass.
 
 ## 12. Environment
 

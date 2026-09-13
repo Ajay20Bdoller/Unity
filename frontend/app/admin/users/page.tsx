@@ -28,7 +28,8 @@ export default function AdminUsersPage() {
             <div>
               <p className="text-sm font-medium text-ink">{u.full_name}</p>
               <p className="text-xs text-muted">
-                {u.email} · {u.role} · {u.is_active ? "active" : "inactive"}
+                {u.email ?? u.mobile_number ?? "no contact info"} · {u.role} ·{" "}
+                {u.is_active ? "active" : "inactive"}
               </p>
             </div>
             <Button variant="secondary" onClick={() => toggle(u)}>
