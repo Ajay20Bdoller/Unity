@@ -65,7 +65,9 @@ security/database rules, and the full phased build plan.
       `GROK_API_KEY` to actually answer (see CLAUDE.md §11)
 - [x] Career library (categories, careers, translations, related
       careers, student interests) — backend only, no frontend UI yet
-- [ ] Courses, assessment, campaigns, mentorship, announcements, admin
-      APIs/UI, i18n
+- [x] Courses, modules, lessons (video/article/quiz/external),
+      enrollment, lesson progress, continue-learning — backend only
+- [ ] Assessment, campaigns, mentorship, announcements, admin APIs/UI,
+      i18n
 
 See [`CLAUDE.md`](./CLAUDE.md) §11 for the full phased plan.

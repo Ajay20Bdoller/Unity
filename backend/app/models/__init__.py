@@ -6,6 +6,15 @@ from app.models.career import (  # noqa: F401
     StudentCareerInterest,
 )
 from app.models.consent import ConsentRecord, ConsentStatus, ConsentType  # noqa: F401
+from app.models.course import (  # noqa: F401
+    Course,
+    CourseTranslation,
+    Enrollment,
+    Lesson,
+    LessonContentType,
+    LessonProgress,
+    Module,
+)
 from app.models.dashboard import DashboardSection, RoleDashboardSection  # noqa: F401
 from app.models.guardian import GuardianRelationship, GuardianRelationshipStatus  # noqa: F401
 from app.models.language import Language  # noqa: F401

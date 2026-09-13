@@ -244,11 +244,13 @@ table (seeded) with a real FK from `users`; `states`/`districts`/
 student onboarding; guardian relationships; per-feature consent
 (dev-mode OTP); dashboard config backend + frontend section registry;
 AI Career Assistant (backend + dashboard card, confirmed provider is
-Groq — see gaps); **career library** (`career_categories` — all 12
-seeded — `careers`, `career_translations`, `related_careers`,
-`student_career_interests`; public browse/filter/search/detail with
-language-fallback, student interest toggle, admin CRUD incl.
-translations and related-career links). Next.js patched for
+Groq — see gaps); career library (categories/careers/translations/
+related careers/student interests); **courses** (`courses`,
+`course_translations`, `modules`, `lessons` — video/article/quiz/
+external_resource types — `enrollments`, `lesson_progress`; browse,
+enroll, complete-lesson gated on enrollment, per-course progress %,
+continue-learning resolving the first incomplete lesson in order,
+admin CRUD for courses/modules/lessons). Next.js patched for
 CVE-2025-66478, `bcrypt` pinned.
 
 This closes the product's first success criterion end-to-end, including
@@ -256,17 +258,18 @@ the frontend: register → login → dashboard → ask the AI assistant.
 Career library is backend-only so far — no frontend career pages yet
 (see gaps).
 
-Verified end-to-end against a real Postgres instance across five
-migrations (`0001`-`0005`, each upgrade/downgrade/upgrade-tested, full
-chain also verified from scratch): the complete auth lifecycle
-(including the frontend's refresh-on-401 retry, verified against the
-live backend), all 5 role dependencies, student onboarding, guardian
-invite/verify/reject, consent OTP flow, dashboard sections resolving
-and rendering, `/ai/chat` end to end, and career browsing/filtering/
-search/detail with Hindi translation resolving correctly and Bengali
-correctly falling back to English, student interest add/idempotent-
-duplicate/remove, non-admin blocked from admin career endpoints (403).
-40/40 backend pytest, frontend `tsc`/lint clean.
+Verified end-to-end against a real Postgres instance across six
+migrations (`0001`-`0006`, each upgrade/downgrade/upgrade-tested, full
+chain also verified from scratch): the complete auth lifecycle, all 5
+role dependencies, student onboarding, guardian invite/verify/reject,
+consent OTP flow, dashboard sections resolving and rendering, `/ai/
+chat` end to end, career browsing/i18n-fallback/interest toggle, and
+courses — browse, detail with ordered modules/lessons, completing a
+lesson before enrolling correctly rejected (400), enroll, progress %
+updates correctly (0% -> 33% after 1 of 3 lessons), continue-learning
+correctly resolves the next incomplete lesson, non-admin blocked from
+admin course endpoints (403). 42/42 backend pytest, frontend `tsc`/
+lint clean.
 
 **Known gaps to close early (foundational, not feature work):**
 - Confirmed AI provider is **Groq**, not xAI's Grok (the shared key was
@@ -282,22 +285,27 @@ duplicate/remove, non-admin blocked from admin career endpoints (403).
   don't exist as an automated suite (flows verified manually via curl).
 - Frontend test framework decision.
 - `states`/`districts`/`schools` have no data yet.
-- No frontend UI for career browsing yet — only the backend API exists.
+- No frontend UI for career browsing or courses yet — backend only.
 - OTP delivery is dev-mode only.
 - In-memory AI rate limiter is single-process only.
 
 **Remaining feature phases (roughly in order):**
-1. Courses + modules + lessons + enrollment + progress.
-2. Career assessment (rule-based scoring, not AI, ~10-15 seed questions).
-3. Campaigns + registration/source tracking.
-4. Mentorship foundation (profile, languages, expertise, availability,
+1. Career assessment (rule-based scoring, not AI, ~10-15 seed questions).
+2. Campaigns + registration/source tracking.
+3. Mentorship foundation (profile, languages, expertise, availability,
    manual/admin matching — no open chat; gate on `has_active_consent`).
-5. Location seed data (states/districts/schools import mechanism).
-6. Announcements, admin APIs for everything above, comprehensive backend
+4. Location seed data (states/districts/schools import mechanism).
+5. Announcements, admin APIs for everything above, comprehensive backend
    test suite, then the rest of the frontend (career browsing UI,
-   student onboarding UI, assessment UI, courses, mentorship, parent UI,
-   admin UI, i18n for all 5 languages), then a full end-to-end
-   verification pass.
+   student onboarding UI, course/lesson UI, assessment UI, mentorship,
+   parent UI, admin UI, i18n for all 5 languages), then a full
+   end-to-end verification pass.
+
+Note: lesson content_type includes QUIZ as a marker only — no
+structured question builder for in-lesson quizzes yet. That's
+deliberately not duplicated with the separate Assessment feature (§11
+next item); revisit if a real product need for lesson-level quizzes
+shows up.
 
 
 ## 12. Environment

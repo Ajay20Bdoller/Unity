@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import ai, auth, careers, dashboard, health, parents, students, users
+from app.api.routes import ai, auth, careers, courses, dashboard, health, parents, students, users
 from app.core.config import get_settings
 
 settings = get_settings()
@@ -27,3 +27,6 @@ app.include_router(ai.router)
 app.include_router(careers.router)
 app.include_router(careers.student_router)
 app.include_router(careers.admin_router)
+app.include_router(courses.router)
+app.include_router(courses.student_router)
+app.include_router(courses.admin_router)
