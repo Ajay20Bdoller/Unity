@@ -10,6 +10,7 @@ from app.api.routes import (
     courses,
     dashboard,
     health,
+    mentorship,
     parents,
     students,
     users,
@@ -46,3 +47,7 @@ app.include_router(campaigns.router)
 app.include_router(assessments.router)
 app.include_router(assessments.student_router)
 app.include_router(assessments.admin_router)
+app.include_router(mentorship.router)
+app.include_router(mentorship.mentor_router)
+app.include_router(mentorship.student_router)
+app.include_router(mentorship.session_router)

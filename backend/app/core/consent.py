@@ -48,3 +48,18 @@ def has_active_consent(
     if record.expires_at is not None and record.expires_at < datetime.now(timezone.utc):
         return False
     return True
+
+
+def student_has_any_active_consent(db: Session, student_id: uuid.UUID, consent_type: ConsentType) -> bool:
+    """Convenience for routes that only know the student, not a specific
+    guardian relationship: true if ANY of the student's guardian
+    relationships has active consent for this type."""
+    from app.models.guardian import GuardianRelationship
+
+    relationship_ids = [
+        r[0]
+        for r in db.query(GuardianRelationship.id)
+        .filter(GuardianRelationship.student_id == student_id)
+        .all()
+    ]
+    return any(has_active_consent(db, rid, consent_type) for rid in relationship_ids)

@@ -26,6 +26,14 @@ from app.models.dashboard import DashboardSection, RoleDashboardSection  # noqa:
 from app.models.guardian import GuardianRelationship, GuardianRelationshipStatus  # noqa: F401
 from app.models.language import Language  # noqa: F401
 from app.models.location import District, School, State  # noqa: F401
+from app.models.mentorship import (  # noqa: F401
+    MentorExpertise,
+    MentorLanguage,
+    MentorshipFeedback,
+    MentorshipRequest,
+    MentorshipRequestStatus,
+    MentorshipSession,
+)
 from app.models.profiles import (  # noqa: F401
     MentorProfile,
     ParentProfile,

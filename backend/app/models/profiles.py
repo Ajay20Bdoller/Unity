@@ -63,6 +63,7 @@ class MentorProfile(Base):
         UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True
     )
     bio: Mapped[str | None] = mapped_column(Text, nullable=True)
+    availability_note: Mapped[str | None] = mapped_column(String(300), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
