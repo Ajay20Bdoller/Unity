@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/field";
 import { Card } from "@/components/ui/card";
 import { SiteNav } from "@/components/site-nav";
+import { GoogleSignInButton } from "@/components/google-sign-in-button";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -69,6 +70,14 @@ export default function LoginPage() {
               {submitting ? t("auth.loggingIn") : t("auth.loginButton")}
             </Button>
           </form>
+
+          <div className="my-5 flex items-center gap-3">
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-xs text-muted">or</span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+          <GoogleSignInButton />
+
           <p className="mt-5 text-sm text-muted">
             {t("auth.newHere")}{" "}
             <Link href="/register" className="font-medium text-primary">

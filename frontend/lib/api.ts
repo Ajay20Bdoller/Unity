@@ -89,6 +89,9 @@ export interface RegisterInput {
   mobile_number?: string;
   campaign_key?: string;
   source?: string;
+  // set when registration was reached via "Sign in with Google" for a
+  // brand-new account — see GoogleSignInButton
+  google_id?: string;
   // student
   date_of_birth?: string; // YYYY-MM-DD
   school_name?: string;
@@ -494,6 +497,16 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ mobile_number, otp, new_password }),
     }),
+  googleAuthConfig: () =>
+    request<{ enabled: boolean; client_id: string | null }>("/auth/google/config"),
+  googleAuth: (id_token: string) =>
+    request<{
+      status: "logged_in" | "new_user";
+      access_token?: string;
+      google_id?: string;
+      email?: string;
+      full_name?: string;
+    }>("/auth/google", { method: "POST", body: JSON.stringify({ id_token }) }),
   logout: () => request<void>("/auth/logout", { method: "POST" }),
   me: () => request<User>("/auth/me"),
   updateLanguage: (preferred_language: string) =>

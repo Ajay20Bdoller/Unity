@@ -140,6 +140,23 @@ the access token server-side (see `require_*` deps in §4).
   account confirming the link) — only the OTP step is bypassed, not
   the whole chain. Sets `verification_method="admin_override"` so this
   is distinguishable in the data from a real OTP verification.
+- **Google Sign-In:** popup flow via Google Identity Services (frontend
+  `components/google-sign-in-button.tsx`) — only a Client ID is needed
+  server-side (`GOOGLE_CLIENT_ID`), never a client secret, since the
+  frontend gets a signed ID token directly and the backend just
+  verifies it against Google's public keys. `POST /auth/google`: an
+  existing `google_id`-linked account logs in; an existing account
+  with a matching (verified) email gets linked on the spot rather than
+  creating a duplicate; a genuinely new person gets their email/name/
+  google_id handed back so the frontend can send them into
+  registration with those pre-filled — Google can't supply this app's
+  required role-specific fields (mobile number at minimum), so new
+  users can never fully skip registration, only the identity part of
+  it. `verify_oauth2_token` fetches Google's certs over the network on
+  *every* call, even to reject a malformed token — a fetch failure is
+  caught separately from a bad-token error (503 vs 401), since an
+  earlier version let an unhandled `TransportError` surface as a raw
+  500 when that fetch failed.
 - **Mentor approval:** registering as a mentor does not make you
   discoverable. `mentors.is_approved` defaults false; `GET /mentors`
   (public browsing) filters on it, and — defense in depth, not just
@@ -365,6 +382,20 @@ throughout.
 **Known gaps:**
 - AI provider (Groq) still unverified with a real live call — try from
   an environment with actual network access.
+- Google Sign-In's actual cryptographic verification (`verify_oauth2_
+  token` against Google's real public keys) is unverified with a real
+  Google-issued token — this sandbox has no network access to Google's
+  servers. What's tested (mocked) is this codebase's own logic: account
+  linking, duplicate prevention, unverified-email rejection. Try a real
+  sign-in from a networked environment with a real `GOOGLE_CLIENT_ID`
+  before relying on it. Same root cause as the Groq gap above.
+- The frontend's production build (`next build`) is unverified end to
+  end — this sandbox can't reach fonts.googleapis.com, which the build
+  needs for next/font. `tsc` and `next lint` are clean, and the
+  register page's `useSearchParams()`/`Suspense` split (added for
+  Google auth's redirect-with-prefill) follows the standard Next.js
+  App Router pattern, but neither of those catches everything a real
+  build would.
 - A live-DB integration test suite exists (`tests/test_integration_*.py`,
   §9) covering auth lifecycle, the role-security matrix, course
   enrollment/progress/continue-learning, assessment submission/scoring/

@@ -42,6 +42,25 @@ of real origins regardless. Whatever frontend URL you deploy to must
 be in this list or every API call will be silently blocked by the
 browser.
 
+## Optional: enable "Sign in with Google"
+
+Leave `GOOGLE_CLIENT_ID` unset to skip this entirely — the button
+just doesn't render, nothing else is affected.
+
+1. [console.cloud.google.com/apis/credentials](https://console.cloud.google.com/apis/credentials)
+   -> Create Credentials -> OAuth client ID -> Web application.
+2. Under "Authorized JavaScript origins," add your frontend's exact
+   URL (the Vercel one from step 4 below, plus `http://localhost:3000`
+   if you also want this working locally). No redirect URI needed —
+   this uses the popup/ID-token flow, not a redirect-based one.
+3. Copy the Client ID (not the secret — this flow never needs it) into
+   `GOOGLE_CLIENT_ID` on the backend host.
+4. A brand-new person signing in with Google still has to finish
+   registration afterward (their email/name come pre-filled, but
+   Google can't supply the role-specific fields this app requires --
+   mobile number at minimum, more for students) — that's expected, not
+   a bug.
+
 ## 1. Generate a real secret
 
 Never deploy with the placeholder JWT_SECRET_KEY from `.env.example`.
@@ -80,6 +99,7 @@ folder already tells it what to run.
    | `GROK_API_KEY` | your Groq key, if you want the AI assistant live |
    | `GROK_MODEL` | `llama-3.3-70b-versatile` |
    | `GROK_BASE_URL` | `https://api.groq.com/openai/v1` |
+   | `GOOGLE_CLIENT_ID` | optional — see "Sign in with Google" above |
 
 3. Deploy. The `Procfile` runs `alembic upgrade head` automatically
    before starting the server, so migrations (including all seed data

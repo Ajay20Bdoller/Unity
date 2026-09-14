@@ -18,6 +18,13 @@ class UserCreate(UserBase):
     password: str
     campaign_key: str | None = None
     source: str | None = None
+    # Set when registration was reached via "Sign in with Google" for a
+    # brand-new account — links it immediately so a future Google
+    # sign-in logs straight in instead of repeating the new-user flow.
+    # Never accepted from a form field the user can freely type; the
+    # frontend only ever populates this from a verified Google response
+    # (see POST /auth/google).
+    google_id: str | None = None
 
     # Student-only (email optional for students; the rest fill in a
     # profile the current onboarding endpoints don't ask for again).

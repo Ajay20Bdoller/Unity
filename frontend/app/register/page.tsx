@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth, ApiError } from "@/lib/auth-context";
 import { useLanguage } from "@/lib/language-context";
@@ -10,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/field";
 import { Card } from "@/components/ui/card";
 import { SiteNav } from "@/components/site-nav";
+import { GoogleSignInButton } from "@/components/google-sign-in-button";
 
 type FormState = {
   full_name: string;
@@ -49,18 +51,33 @@ const emptyForm: FormState = {
   school_location: "",
 };
 
-export default function RegisterPage() {
+function RegisterForm() {
   const { register } = useAuth();
   const { t } = useLanguage();
+  const searchParams = useSearchParams();
   const [role, setRole] = useState<UserRole>("student");
   const [form, setForm] = useState<FormState>(emptyForm);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [states, setStates] = useState<State[]>([]);
+  const [googleId, setGoogleId] = useState<string | null>(null);
 
   useEffect(() => {
     api.states().then(setStates).catch(() => setStates([]));
   }, []);
+
+  // Arriving from GoogleSignInButton's "new_user" redirect: pre-fill
+  // what Google gave us (email, name) and carry the google_id through
+  // to the eventual submission so this account gets linked immediately
+  // rather than requiring a separate "sign in with Google" afterward.
+  useEffect(() => {
+    const gid = searchParams.get("google_id");
+    const email = searchParams.get("email");
+    const name = searchParams.get("name");
+    if (gid) setGoogleId(gid);
+    if (email) setForm((prev) => ({ ...prev, email }));
+    if (name) setForm((prev) => ({ ...prev, full_name: name }));
+  }, [searchParams]);
 
   const roles: { value: UserRole; label: string }[] = [
     { value: "student", label: t("register.roleStudent") },
@@ -103,6 +120,7 @@ export default function RegisterPage() {
       password: form.password,
       email: form.email || undefined,
       mobile_number: form.mobile_number || undefined,
+      google_id: googleId || undefined,
     };
 
     if (role === "student") {
@@ -163,6 +181,24 @@ export default function RegisterPage() {
               </button>
             ))}
           </div>
+
+          {!googleId && (
+            <>
+              <div className="mt-5 flex items-center gap-3">
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-xs text-muted">or continue with</span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+              <div className="mt-3 flex justify-center">
+                <GoogleSignInButton />
+              </div>
+            </>
+          )}
+          {googleId && (
+            <p className="mt-4 text-xs text-primary">
+              Signed in with Google — email pre-filled below. Pick your role and finish the rest.
+            </p>
+          )}
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <Field label={t("register.fullNameLabel")} htmlFor="full_name">
@@ -385,5 +421,13 @@ export default function RegisterPage() {
         </Card>
       </main>
     </>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={null}>
+      <RegisterForm />
+    </Suspense>
   );
 }

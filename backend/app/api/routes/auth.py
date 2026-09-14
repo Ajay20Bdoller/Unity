@@ -1,6 +1,9 @@
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
+from google.auth import exceptions as google_auth_exceptions
+from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token as google_id_token
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
@@ -30,6 +33,9 @@ from app.models.user import SELF_REGISTERABLE_ROLES, User, UserRole
 from app.schemas.auth import (
     ForgotPasswordOTPResponse,
     ForgotPasswordRequest,
+    GoogleAuthConfig,
+    GoogleAuthRequest,
+    GoogleAuthResponse,
     LoginRequest,
     ResetPasswordRequest,
     Token,
@@ -131,10 +137,13 @@ def register(payload: UserCreate, request: Request, db: Session = Depends(get_db
         User.mobile_number == payload.mobile_number
     ).first():
         raise HTTPException(status_code=400, detail="Mobile number is already registered")
+    if payload.google_id and db.query(User).filter(User.google_id == payload.google_id).first():
+        raise HTTPException(status_code=400, detail="This Google account is already registered")
 
     user = User(
         email=payload.email,
         mobile_number=payload.mobile_number,
+        google_id=payload.google_id,
         full_name=payload.full_name,
         role=payload.role,
         preferred_language=payload.preferred_language,
@@ -352,3 +361,80 @@ def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db))
         db.add(token)
 
     db.commit()
+
+
+@router.get("/google/config", response_model=GoogleAuthConfig)
+def google_auth_config() -> GoogleAuthConfig:
+    """The frontend calls this to decide whether to render the Google
+    button at all, rather than showing one that 503s on every click
+    when no GOOGLE_CLIENT_ID has been configured."""
+    return GoogleAuthConfig(
+        enabled=settings.GOOGLE_CLIENT_ID is not None,
+        client_id=settings.GOOGLE_CLIENT_ID,
+    )
+
+
+@router.post("/google", response_model=GoogleAuthResponse)
+def google_auth(
+    payload: GoogleAuthRequest, response: Response, db: Session = Depends(get_db)
+) -> GoogleAuthResponse:
+    """Verifies a Google ID token (from the frontend's Google Identity
+    Services popup) and either logs the person in (an account already
+    linked to this Google ID, or an existing account with a matching
+    email — linked on the spot) or reports back enough to send a
+    brand-new person into registration with email/name pre-filled.
+    Google doesn't give us the role-specific fields every role here
+    requires (mobile number at minimum, DOB/school/parent info for
+    students), so a new Google sign-in can never skip registration
+    entirely — only speed up the identity part of it.
+    """
+    if not settings.GOOGLE_CLIENT_ID:
+        raise HTTPException(status_code=503, detail="Google sign-in is not configured")
+
+    try:
+        idinfo = google_id_token.verify_oauth2_token(
+            payload.id_token, google_requests.Request(), settings.GOOGLE_CLIENT_ID
+        )
+    except ValueError:
+        # Malformed token, bad signature, wrong audience, expired, etc.
+        # -- genuinely the client's fault.
+        raise HTTPException(status_code=401, detail="Invalid Google token")
+    except google_auth_exceptions.GoogleAuthError:
+        # verify_oauth2_token fetches Google's public certs over the
+        # network on every call, even to reject a malformed token --
+        # a fetch failure here is our server not being able to reach
+        # Google, not a bad token, so this is a 503, not a 401.
+        raise HTTPException(
+            status_code=503, detail="Could not reach Google to verify sign-in — try again shortly"
+        )
+
+    if not idinfo.get("email_verified", False):
+        raise HTTPException(status_code=401, detail="Google account email is not verified")
+
+    google_sub: str = idinfo["sub"]
+    email: str = idinfo["email"]
+    full_name: str = idinfo.get("name") or email
+
+    user = db.query(User).filter(User.google_id == google_sub).first()
+    if not user:
+        # No account linked to this Google ID yet -- but if the email
+        # matches an existing password-based account, link it now
+        # rather than creating a duplicate account for the same person.
+        existing_by_email = db.query(User).filter(User.email == email).first()
+        if existing_by_email:
+            existing_by_email.google_id = google_sub
+            db.add(existing_by_email)
+            db.commit()
+            db.refresh(existing_by_email)
+            user = existing_by_email
+
+    if user:
+        if not user.is_active:
+            raise HTTPException(status_code=403, detail="Account is inactive")
+        access_token, raw_refresh_token = _issue_tokens(db, user)
+        _set_auth_cookies(response, access_token, raw_refresh_token)
+        return GoogleAuthResponse(status="logged_in", access_token=access_token)
+
+    return GoogleAuthResponse(
+        status="new_user", google_id=google_sub, email=email, full_name=full_name
+    )

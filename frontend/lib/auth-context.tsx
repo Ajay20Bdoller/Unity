@@ -4,11 +4,19 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, ApiError, type RegisterInput, type User } from "@/lib/api";
 
+interface GoogleAuthOutcome {
+  status: "logged_in" | "new_user";
+  google_id?: string;
+  email?: string;
+  full_name?: string;
+}
+
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
   login: (identifier: string, password: string) => Promise<void>;
   register: (input: RegisterInput) => Promise<void>;
+  loginWithGoogle: (idToken: string) => Promise<GoogleAuthOutcome>;
   logout: () => Promise<void>;
 }
 
@@ -41,6 +49,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await login(identifier, input.password);
   }
 
+  async function loginWithGoogle(idToken: string): Promise<GoogleAuthOutcome> {
+    const result = await api.googleAuth(idToken);
+    if (result.status === "logged_in") {
+      const me = await api.me();
+      setUser(me);
+      router.push("/dashboard");
+    }
+    // "new_user": nothing to set yet — the caller sends the person into
+    // registration with the identity fields this returned pre-filled.
+    return {
+      status: result.status,
+      google_id: result.google_id,
+      email: result.email,
+      full_name: result.full_name,
+    };
+  }
+
   async function logout() {
     await api.logout();
     setUser(null);
@@ -48,7 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, loginWithGoogle, logout }}>
       {children}
     </AuthContext.Provider>
   );

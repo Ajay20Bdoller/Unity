@@ -31,3 +31,27 @@ class ResetPasswordRequest(BaseModel):
         if len(value) < 8:
             raise ValueError("Password must be at least 8 characters long")
         return value
+
+
+class GoogleAuthConfig(BaseModel):
+    enabled: bool
+    client_id: str | None = None
+
+
+class GoogleAuthRequest(BaseModel):
+    id_token: str
+
+
+class GoogleAuthResponse(BaseModel):
+    # "logged_in": an account (existing, or newly linked by matching
+    # email) was found and the user is now authenticated -- cookies are
+    # already set by this response.
+    # "new_user": no account exists yet. The frontend should send the
+    # person into registration with google_id/email/full_name
+    # pre-filled; they still pick a role and fill in the fields Google
+    # doesn't provide (mobile number, and everything role-specific).
+    status: str
+    access_token: str | None = None
+    google_id: str | None = None
+    email: str | None = None
+    full_name: str | None = None

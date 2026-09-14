@@ -6,6 +6,17 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     ENVIRONMENT: str = "development"
+    # "Sign in with Google" (Google Identity Services popup flow) --
+    # only the Client ID is needed server-side, not a client secret:
+    # the frontend gets a signed ID token directly from Google, and the
+    # backend just verifies its signature/audience against this ID.
+    # Get one at https://console.cloud.google.com/apis/credentials
+    # (OAuth 2.0 Client ID, type "Web application", with your frontend
+    # origin under "Authorized JavaScript origins"). Leave unset to
+    # disable Google sign-in entirely -- GET /auth/google/config
+    # reports whether it's configured so the frontend can hide the
+    # button rather than show one that 400s.
+    GOOGLE_CLIENT_ID: str | None = None
     # Whether OTPs (password reset, guardian consent) are echoed back in
     # the API response instead of only being "sent" (no real SMS
     # provider is wired up yet — see CLAUDE.md). Deliberately NOT tied
