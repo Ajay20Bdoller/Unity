@@ -9,6 +9,7 @@ from app.models.course import Course, Enrollment, Lesson, LessonProgress, Module
 from app.models.user import User
 from app.schemas.course import (
     ContinueLearningItem,
+    CourseAdminDetail,
     CourseAdminRead,
     CourseCreate,
     CourseDetail,
@@ -272,6 +273,31 @@ def list_all_courses_admin(
     current_user: User = Depends(require_admin), db: Session = Depends(get_db)
 ) -> list[Course]:
     return db.query(Course).order_by(Course.created_at.desc()).all()
+
+
+@admin_router.get("/{course_id}", response_model=CourseAdminDetail)
+def get_course_admin(
+    course_id: uuid.UUID,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> CourseAdminDetail:
+    """Same shape as the public course-detail endpoint, but works for
+    unpublished (draft) courses too -- the public one filters to
+    published only, which would 404 for exactly the case an admin most
+    needs this: adding modules/lessons to a course before publishing
+    it."""
+    course = db.get(Course, course_id)
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    return CourseAdminDetail(
+        id=course.id,
+        slug=course.slug,
+        title=course.title,
+        description=course.description,
+        thumbnail_url=course.thumbnail_url,
+        published=course.published,
+        modules=_course_modules(db, course.id),
+    )
 
 
 @admin_router.post("", response_model=CourseAdminRead, status_code=201)

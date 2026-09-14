@@ -48,6 +48,10 @@ class CourseAdminRead(CourseListItem):
     published: bool
 
 
+class CourseAdminDetail(CourseAdminRead):
+    modules: list[ModuleRead]
+
+
 class CourseDetail(CourseListItem):
     modules: list[ModuleRead]
     language: str = "en"

@@ -380,6 +380,26 @@ export interface AdminCourse extends CourseListItem {
   published?: boolean;
 }
 
+export interface AdminLesson {
+  id: string;
+  title: string;
+  content_type: LessonContentType;
+  content_url: string | null;
+  content_body: string | null;
+  display_order: number;
+}
+
+export interface AdminModule {
+  id: string;
+  title: string;
+  display_order: number;
+  lessons: AdminLesson[];
+}
+
+export interface AdminCourseDetail extends AdminCourse {
+  modules: AdminModule[];
+}
+
 export type CampaignType = "school" | "coaching" | "community" | "online" | "referral";
 
 export interface Campaign {
@@ -679,6 +699,27 @@ export const api = {
   adminUpdateCourse: (courseId: string, payload: { published?: boolean }) =>
     request<AdminCourse>(`/admin/courses/${courseId}`, {
       method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+  adminCourseDetail: (courseId: string) =>
+    request<AdminCourseDetail>(`/admin/courses/${courseId}`),
+  adminAddModule: (courseId: string, payload: { title: string; display_order: number }) =>
+    request<{ id: string; title: string; display_order: number }>(
+      `/admin/courses/${courseId}/modules`,
+      { method: "POST", body: JSON.stringify(payload) }
+    ),
+  adminAddLesson: (
+    moduleId: string,
+    payload: {
+      title: string;
+      content_type: LessonContentType;
+      content_url?: string;
+      content_body?: string;
+      display_order: number;
+    }
+  ) =>
+    request<AdminLesson>(`/admin/courses/modules/${moduleId}/lessons`, {
+      method: "POST",
       body: JSON.stringify(payload),
     }),
   adminCreateCareerCategory: (payload: { key: string; name: string }) =>
