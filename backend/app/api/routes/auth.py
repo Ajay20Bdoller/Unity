@@ -58,12 +58,27 @@ REFRESH_COOKIE_MAX_AGE = settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
 
 def _set_auth_cookies(response: Response, access_token: str, raw_refresh_token: str) -> None:
     is_prod = settings.ENVIRONMENT != "development"
+    # SameSite=Lax cookies are NOT sent on cross-site fetch/XHR requests
+    # (only top-level navigations) -- and a real deployment has the
+    # frontend and backend on different domains (e.g. vercel.app and
+    # railway.app), which browsers treat as cross-site regardless of
+    # CORS being configured correctly. SameSite=None is required for
+    # the browser to attach these cookies to those API calls at all;
+    # browsers in turn require Secure whenever SameSite=None is set, so
+    # this only applies when is_prod (https) is true -- in local dev
+    # (http, no TLS) SameSite=None would be silently rejected by the
+    # browser, so Lax is correct there instead (frontend/backend on
+    # different localhost *ports* are still same-site, so Lax works).
+    # curl-based testing never surfaces this: curl doesn't enforce
+    # SameSite at all, so every "live curl verification" throughout
+    # development kept passing regardless of this setting.
+    samesite = "none" if is_prod else "lax"
     response.set_cookie(
         key="access_token",
         value=access_token,
         httponly=True,
         secure=is_prod,
-        samesite="lax",
+        samesite=samesite,
         max_age=ACCESS_COOKIE_MAX_AGE,
     )
     response.set_cookie(
@@ -71,15 +86,17 @@ def _set_auth_cookies(response: Response, access_token: str, raw_refresh_token: 
         value=raw_refresh_token,
         httponly=True,
         secure=is_prod,
-        samesite="lax",
+        samesite=samesite,
         max_age=REFRESH_COOKIE_MAX_AGE,
         path="/auth",  # only sent back to auth endpoints, not every request
     )
 
 
 def _clear_auth_cookies(response: Response) -> None:
-    response.delete_cookie("access_token")
-    response.delete_cookie("refresh_token", path="/auth")
+    is_prod = settings.ENVIRONMENT != "development"
+    samesite = "none" if is_prod else "lax"
+    response.delete_cookie("access_token", secure=is_prod, samesite=samesite)
+    response.delete_cookie("refresh_token", path="/auth", secure=is_prod, samesite=samesite)
 
 
 def _issue_tokens(db: Session, user: User) -> tuple[str, str]:
@@ -266,7 +283,7 @@ def request_password_reset_otp(
     accounts; only populates dev_otp when a matching user actually
     exists AND we're in dev mode."""
     _forgot_password_limiter.check(get_client_ip(request))
-    is_dev = settings.ENVIRONMENT == "development"
+    is_dev = settings.expose_dev_otp
     user = db.query(User).filter(User.mobile_number == payload.mobile_number).first()
 
     if not user:

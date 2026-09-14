@@ -110,6 +110,22 @@ the access token server-side (see `require_*` deps in §4).
 
 ## 5. Security rules
 
+- **Cross-origin cookies:** a real deployment has the frontend and
+  backend on different domains (e.g. vercel.app + railway.app), which
+  browsers treat as cross-site — `SameSite=Lax` cookies are simply not
+  sent on cross-site fetch/XHR calls (only top-level navigations), so
+  auth would silently break post-deploy despite working in every local
+  curl test (curl doesn't enforce SameSite at all). `_set_auth_cookies`
+  uses `SameSite=None` + `Secure` when `ENVIRONMENT != "development"`,
+  `Lax` without `Secure` otherwise (`SameSite=None` requires `Secure`,
+  which requires HTTPS, which local http:// dev doesn't have).
+- **OTP exposure vs. ENVIRONMENT:** deliberately decoupled — see
+  `expose_dev_otp` in `core/config.py`. `ENVIRONMENT=production` alone
+  hides OTPs (safe default); a pilot without real SMS yet needs
+  `EXPOSE_DEV_OTP=true` explicitly on top of that to still see them.
+  Conflating these would force a choice between secure cookies and a
+  working OTP flow, which isn't a real tradeoff either deployment
+  actually needs to make.
 - **Rate limiting:** per-IP (via X-Forwarded-For, falling back to
   request.client — see `core/rate_limit.py`), not per-account, since an
   attacker doesn't need a valid account to hammer these: login 10/15min,

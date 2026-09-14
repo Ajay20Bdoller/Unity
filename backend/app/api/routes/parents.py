@@ -136,9 +136,12 @@ def request_consent_otp(
     db.add(record)
     db.commit()
 
-    # Dev-mode only: no SMS provider wired up. Never echo the OTP outside
-    # of ENVIRONMENT=development — see app/core/consent.py.
-    is_dev = settings.ENVIRONMENT == "development"
+    # No real SMS provider wired up yet (see CLAUDE.md) — whether the
+    # OTP is echoed back here is controlled by expose_dev_otp, which is
+    # NOT the same thing as ENVIRONMENT=production: a pilot deployment
+    # needs production's secure-cookie behavior but may still need this
+    # on until SMS exists. See app/core/config.py.
+    is_dev = settings.expose_dev_otp
     return ConsentOTPResponse(
         message="OTP generated." if is_dev else "OTP sent.",
         dev_otp=raw_otp if is_dev else None,
@@ -181,7 +184,7 @@ def verify_consent_otp(
 
     record.status = ConsentStatus.GRANTED
     record.verified_at = datetime.now(timezone.utc)
-    record.verification_method = "otp_dev_mode" if settings.ENVIRONMENT == "development" else "otp"
+    record.verification_method = "otp_dev_mode" if settings.expose_dev_otp else "otp"
     record.otp_hash = None
     record.otp_expires_at = None
     db.add(record)

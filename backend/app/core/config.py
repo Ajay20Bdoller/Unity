@@ -6,6 +6,21 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     ENVIRONMENT: str = "development"
+    # Whether OTPs (password reset, guardian consent) are echoed back in
+    # the API response instead of only being "sent" (no real SMS
+    # provider is wired up yet — see CLAUDE.md). Deliberately NOT tied
+    # to ENVIRONMENT: a pilot deployment needs ENVIRONMENT=production
+    # for secure cookies, but may still need this on until a real SMS
+    # provider exists. Defaults to matching ENVIRONMENT (on for
+    # development, off otherwise) but can be overridden explicitly --
+    # see EXPOSE_DEV_OTP below.
+    EXPOSE_DEV_OTP: bool | None = None
+
+    @property
+    def expose_dev_otp(self) -> bool:
+        if self.EXPOSE_DEV_OTP is not None:
+            return self.EXPOSE_DEV_OTP
+        return self.ENVIRONMENT == "development"
 
     DATABASE_URL: str
 
