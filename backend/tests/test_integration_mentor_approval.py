@@ -7,6 +7,22 @@ def test_new_mentor_is_pending_and_hidden_from_public_list(mentor_client, admin_
     assert mine["is_approved"] is False
 
 
+def test_unapproved_mentor_can_still_see_own_profile(mentor_client):
+    """The bug this locks in: GET /mentors (the public list) correctly
+    hides an unapproved mentor, but that must not also blind the
+    mentor to their own saved profile/expertise/languages while
+    waiting for approval."""
+    own_profile = mentor_client.get("/mentors/me")
+    assert own_profile.status_code == 200
+    assert own_profile.json()["full_name"] == "Role Matrix Mentor"
+
+    categories = mentor_client.get("/careers/categories").json()
+    mentor_client.post(f"/mentors/me/expertise/{categories[0]['id']}")
+
+    updated = mentor_client.get("/mentors/me").json()
+    assert categories[0]["key"] in updated["expertise"]
+
+
 def test_one_click_approve_makes_mentor_visible(mentor_client, admin_client):
     admin_list = admin_client.get("/admin/mentors").json()
     mentor_id = next(m for m in admin_list if m["full_name"] == "Role Matrix Mentor")["user_id"]

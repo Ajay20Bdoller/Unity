@@ -25,14 +25,11 @@ export default function MentorProfilePage() {
   function load() {
     if (!user) return;
     api
-      .mentors()
-      .then((all) => {
-        const mine = all.find((m) => m.user_id === user.id);
-        if (mine) {
-          setProfile(mine);
-          setBio(mine.bio ?? "");
-          setAvailability(mine.availability_note ?? "");
-        }
+      .myMentorProfile()
+      .then((mine) => {
+        setProfile(mine);
+        setBio(mine.bio ?? "");
+        setAvailability(mine.availability_note ?? "");
       })
       .catch(() => {});
   }

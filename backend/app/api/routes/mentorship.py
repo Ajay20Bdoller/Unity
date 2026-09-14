@@ -86,6 +86,20 @@ def list_mentors(
     return [_public_profile(db, m, profiles.get(m.id)) for m in mentors]
 
 
+@mentor_router.get("", response_model=MentorPublicProfile)
+def get_my_profile(
+    current_user: User = Depends(require_mentor), db: Session = Depends(get_db)
+) -> MentorPublicProfile:
+    """A mentor's own view of their profile -- unlike GET /mentors
+    (the public list), this works regardless of approval status. An
+    unapproved mentor still needs to see and edit their own expertise/
+    languages/bio while waiting for admin approval; the public list
+    filtering them out until approved shouldn't also blind them to
+    their own saved state."""
+    profile = db.get(MentorProfile, current_user.id)
+    return _public_profile(db, current_user, profile)
+
+
 @mentor_router.patch("", response_model=MentorPublicProfile)
 def update_my_profile(
     payload: MentorProfileUpdate,

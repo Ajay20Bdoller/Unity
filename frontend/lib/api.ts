@@ -624,6 +624,7 @@ export const api = {
     const suffix = qs.toString() ? `?${qs.toString()}` : "";
     return request<MentorPublicProfile[]>(`/mentors${suffix}`);
   },
+  myMentorProfile: () => request<MentorPublicProfile>("/mentors/me"),
   updateMentorProfile: (payload: { bio?: string; availability_note?: string }) =>
     request<MentorPublicProfile>("/mentors/me", { method: "PATCH", body: JSON.stringify(payload) }),
   addMentorExpertise: (categoryId: string) =>
