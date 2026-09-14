@@ -132,6 +132,14 @@ the access token server-side (see `require_*` deps in §4).
   register 5/hour, forgot-password OTP request 5/hour. Same
   `InMemoryRateLimiter` the AI chat endpoint already used, generalized
   and moved to `app/core/` since it's no longer AI-specific.
+- **Admin consent override:** `POST /admin/guardian-relationships/
+  {id}/consent/{type}/grant` grants a specific consent without the OTP
+  flow, for a pilot without real SMS where the admin has personally
+  verified the parent's agreement some other way. Still requires the
+  guardian_relationship to already be VERIFIED (the parent's own
+  account confirming the link) — only the OTP step is bypassed, not
+  the whole chain. Sets `verification_method="admin_override"` so this
+  is distinguishable in the data from a real OTP verification.
 - **Mentor approval:** registering as a mentor does not make you
   discoverable. `mentors.is_approved` defaults false; `GET /mentors`
   (public browsing) filters on it, and — defense in depth, not just

@@ -457,6 +457,22 @@ export interface AdminMentor {
   created_at: string;
 }
 
+export interface AdminConsentSummary {
+  consent_type: "mentorship" | "data_sharing";
+  status: "pending" | "granted" | "rejected" | "expired" | "revoked";
+}
+
+export interface AdminGuardianRelationship {
+  id: string;
+  student_name: string;
+  parent_name: string;
+  parent_contact: string | null;
+  status: "pending" | "verified" | "rejected";
+  created_at: string;
+  verified_at: string | null;
+  consents: AdminConsentSummary[];
+}
+
 export const api = {
   register: (input: RegisterInput) =>
     request<User>("/auth/register", {
@@ -613,6 +629,13 @@ export const api = {
   // admin
   adminUsers: () => request<AdminUser[]>("/admin/users"),
   adminActivityStats: () => request<AdminActivityStats>("/admin/dashboard/stats"),
+  adminGuardianRelationships: () =>
+    request<AdminGuardianRelationship[]>("/admin/guardian-relationships"),
+  adminGrantConsent: (relationshipId: string, consentType: "mentorship" | "data_sharing") =>
+    request<AdminGuardianRelationship>(
+      `/admin/guardian-relationships/${relationshipId}/consent/${consentType}/grant`,
+      { method: "POST" }
+    ),
   adminMentors: () => request<AdminMentor[]>("/admin/mentors"),
   adminApproveMentor: (userId: string) =>
     request<AdminMentor>(`/admin/mentors/${userId}/approve`, { method: "POST" }),

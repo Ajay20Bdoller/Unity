@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import (
+    admin_consent,
     admin_stats,
     admin_users,
     ai,
@@ -65,3 +66,4 @@ app.include_router(schools.router)
 app.include_router(locations.router)
 app.include_router(admin_users.router)
 app.include_router(admin_stats.router)
+app.include_router(admin_consent.router)

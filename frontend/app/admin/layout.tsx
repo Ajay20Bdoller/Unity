@@ -7,6 +7,7 @@ import { SiteNav } from "@/components/site-nav";
 const ADMIN_LINKS = [
   { href: "/admin/users", label: "Users" },
   { href: "/admin/mentors", label: "Mentors" },
+  { href: "/admin/consent", label: "Guardian Consent" },
   { href: "/admin/careers", label: "Careers" },
   { href: "/admin/courses", label: "Courses" },
   { href: "/admin/assessments", label: "Assessments" },

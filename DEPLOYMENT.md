@@ -6,6 +6,42 @@ personally know or vet, not open public signup). It assumes:
 - No real SMS provider yet (per CLAUDE.md — OTP stays dev-mode; you
   said you'll add this once there's budget for it).
 
+## Nothing here is locked to Vercel/Railway specifically
+
+The backend is plain FastAPI/Python, the frontend is plain Next.js —
+neither depends on a specific host's proprietary APIs. Concretely:
+- **Backend**: works on Render, Railway, Fly.io, Google Cloud Run,
+  AWS (ECS/Fargate, Elastic Beanstalk, EC2), DigitalOcean App
+  Platform, or a plain VPS running Docker — the `Dockerfile` in
+  `backend/` builds a portable container image that runs anywhere;
+  the `Procfile` is an alternative for hosts (Railway, Render, Heroku-
+  style) that support that convention directly without needing a
+  Dockerfile at all. Pick whichever your host prefers, not both.
+- **Frontend**: Vercel is the path of least resistance for Next.js
+  (built by the same company, zero-config), but Netlify, AWS Amplify,
+  or a Docker container anywhere all work too.
+- **Render specifically**: no code changes needed. Render supports
+  both a `Procfile` and (more commonly) just setting a Build Command
+  (`pip install -r requirements.txt`) and Start Command
+  (`alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT`)
+  directly in its dashboard if it doesn't pick up the Procfile
+  automatically — check whichever Render's UI shows you.
+- **AWS later**: no code changes needed there either. The `Dockerfile`
+  is what you'd point ECS/Fargate or App Runner at directly; the
+  frontend could go on Amplify (which supports Next.js natively) or
+  as its own container. Only the environment-variable-setting
+  mechanism changes per host, not the app.
+
+## Does CORS accept requests from any origin?
+
+No — `CORS_ORIGINS` is a specific allowlist you configure (see step
+3), not a wildcard. This is required, not just a choice: browsers
+don't allow a wildcard `*` origin together with credentialed requests
+(cookies), which this app depends on — so it has to be an exact list
+of real origins regardless. Whatever frontend URL you deploy to must
+be in this list or every API call will be silently blocked by the
+browser.
+
 ## 1. Generate a real secret
 
 Never deploy with the placeholder JWT_SECRET_KEY from `.env.example`.
@@ -107,7 +143,11 @@ is no self-service way to reset an admin's password.
       SMS yet), which is fine for a pilot where you're walking people
       through it, but **make sure whoever's piloting this understands
       that step is you manually relaying it**, not something that
-      arrives by text
+      arrives by text. Alternatively: `/admin/consent` lets you grant
+      a consent directly (no OTP at all) once you've personally
+      confirmed the parent's agreement some other way — the guardian
+      link itself still needs the parent to verify it from their own
+      account first, only the OTP step is skippable this way.
 - [ ] Confirm the AI assistant answers (if you set the Groq key)
 - [ ] Check the site loads correctly in both light and dark mode
 - [ ] Try switching languages on the login/register page
