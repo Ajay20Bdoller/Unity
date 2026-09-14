@@ -3,7 +3,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_admin, require_student
+from app.api.deps import get_current_user, require_admin, require_student
 from app.db.session import get_db
 from app.models.course import Course, Enrollment, Lesson, LessonProgress, Module
 from app.models.user import User
@@ -70,7 +70,9 @@ def list_courses(db: Session = Depends(get_db)) -> list[Course]:
 
 
 @router.get("/{slug}", response_model=CourseDetail)
-def get_course(slug: str, db: Session = Depends(get_db)) -> CourseDetail:
+def get_course(
+    slug: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+) -> CourseDetail:
     course = db.query(Course).filter(Course.slug == slug, Course.published.is_(True)).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")

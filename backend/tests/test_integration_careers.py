@@ -24,8 +24,13 @@ def test_category_filter_and_search(client):
     assert all("data" in c["title"].lower() for c in searched)
 
 
-def test_detail_includes_related_careers_and_category(client):
-    detail = client.get("/careers/software-engineer")
+def test_detail_requires_login(client):
+    res = client.get("/careers/software-engineer")
+    assert res.status_code == 401
+
+
+def test_detail_includes_related_careers_and_category(student_client):
+    detail = student_client.get("/careers/software-engineer")
     assert detail.status_code == 200
     body = detail.json()
     assert body["category"]["key"] == "technology_ai"
@@ -33,18 +38,18 @@ def test_detail_includes_related_careers_and_category(client):
     assert body["language"] == "en"
 
 
-def test_translation_resolves_and_missing_language_falls_back_to_english(client):
-    hindi = client.get("/careers/software-engineer?lang=hi").json()
+def test_translation_resolves_and_missing_language_falls_back_to_english(student_client):
+    hindi = student_client.get("/careers/software-engineer?lang=hi").json()
     assert hindi["language"] == "hi"
     assert hindi["title"] != "Software Engineer"  # actually translated
 
-    bengali = client.get("/careers/software-engineer?lang=bn").json()
+    bengali = student_client.get("/careers/software-engineer?lang=bn").json()
     assert bengali["language"] == "en"  # no bn translation seeded -> falls back
     assert bengali["title"] == "Software Engineer"
 
 
-def test_unknown_slug_is_404(client):
-    res = client.get("/careers/not-a-real-career")
+def test_unknown_slug_is_404(student_client):
+    res = student_client.get("/careers/not-a-real-career")
     assert res.status_code == 404
 
 

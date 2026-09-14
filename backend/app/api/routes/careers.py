@@ -3,7 +3,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_admin, require_student
+from app.api.deps import get_current_user, require_admin, require_student
 from app.db.session import get_db
 from app.models.career import (
     Career,
@@ -65,6 +65,7 @@ def list_careers(
 def get_career(
     slug: str,
     lang: str = Query(default="en"),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> CareerDetail:
     career = db.query(Career).filter(Career.slug == slug).first()

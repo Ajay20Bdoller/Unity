@@ -16,12 +16,19 @@ def _get_lesson_ids_in_order(client):
     return [lesson["id"] for module in detail["modules"] for lesson in module["lessons"]]
 
 
-def test_course_listing_and_detail_are_public(client):
+def test_course_listing_is_public(client):
     courses = client.get("/courses")
     assert courses.status_code == 200
     assert any(c["slug"] == "intro-to-programming" for c in courses.json())
 
-    detail = client.get("/courses/intro-to-programming")
+
+def test_course_detail_requires_login(client):
+    res = client.get("/courses/intro-to-programming")
+    assert res.status_code == 401
+
+
+def test_course_detail_for_logged_in_user(student_client):
+    detail = student_client.get("/courses/intro-to-programming")
     assert detail.status_code == 200
     assert len(detail.json()["modules"]) == 2
 

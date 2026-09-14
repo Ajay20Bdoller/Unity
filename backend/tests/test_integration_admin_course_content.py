@@ -1,12 +1,12 @@
-def test_admin_course_detail_works_for_draft_course(admin_client, client):
+def test_admin_course_detail_works_for_draft_course(admin_client, student_client):
     course = admin_client.post(
         "/admin/courses",
         json={"slug": "draft-test-course", "title": "Draft Test", "description": "d"},
     ).json()
     assert course["published"] is False
 
-    public_attempt = client.get("/courses/draft-test-course")
-    assert public_attempt.status_code == 404
+    regular_attempt = student_client.get("/courses/draft-test-course")
+    assert regular_attempt.status_code == 404
 
     admin_detail = admin_client.get(f"/admin/courses/{course['id']}")
     assert admin_detail.status_code == 200
