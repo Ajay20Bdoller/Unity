@@ -153,6 +153,39 @@ use `/forgot-password` to recover this account if you lose the
 password, since that flow is mobile-only by design. Without it, there
 is no self-service way to reset an admin's password.
 
+### Accessing admin — right after deploy, and a year from now
+
+Nothing about admin changes once deployed, or as time passes — there's
+no separate admin site or URL. It's the exact same login page as
+everyone else, just on your real domain instead of localhost:
+
+1. Go to `https://yourapp.vercel.app/login` (your real frontend URL).
+2. Log in with the admin email/mobile + password from step 5 above.
+3. The nav shows an "Admin" link automatically, because your account's
+   role is `admin` — nothing else to configure, then or later.
+
+**If you forget the password later:** same `/forgot-password` flow any
+user uses — works for the admin account too, *if* you gave it a
+mobile number in step 5. If you skipped `--mobile`, there's no
+self-service reset for that account.
+
+**If you're ever fully locked out** (forgot the password, and either
+skipped `--mobile` or can't get the OTP because there's still no real
+SMS provider and `EXPOSE_DEV_OTP` is off) — you can never be
+*permanently* locked out as long as you still have your `DATABASE_URL`
+(from Neon, or wherever the database lives): just run the exact same
+command from step 5 again, with a new email/mobile, to mint a fresh
+admin account. The script has no limit on how many admins exist or
+when they're created — this works the day you deploy or five years
+from now, unchanged. Your real "master key" to this whole platform is
+database access, not any one admin account's password — treat
+`DATABASE_URL` accordingly (a password manager, not a sticky note).
+
+Practical advice: the moment you create the first admin account, save
+the email/mobile/password in a password manager immediately. It's
+easy to forget you even made one after everything's running smoothly
+for months.
+
 ## 6. Smoke-test checklist before inviting anyone
 
 - [ ] Register a real test account for each role (student, parent,

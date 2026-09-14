@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   api,
   ApiError,
@@ -67,7 +68,10 @@ export default function StudentMentorshipPage() {
       <main className="mx-auto max-w-3xl px-6 py-10">
         <h1 className="font-display text-2xl font-medium text-ink">Mentorship</h1>
         <p className="mt-1 text-sm text-muted">
-          Requesting a mentor requires your parent/guardian to grant mentorship consent first.
+          Requesting a mentor requires your parent/guardian to grant mentorship consent first.{" "}
+          <Link href="/student/guardians" className="text-primary hover:underline">
+            Invite your parent →
+          </Link>
         </p>
         {error && <p className="mt-3 text-sm text-danger">{error}</p>}
 

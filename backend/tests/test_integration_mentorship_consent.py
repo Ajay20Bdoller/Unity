@@ -55,6 +55,20 @@ def test_mentorship_request_blocked_without_any_consent(student_client):
     assert res.status_code == 403
 
 
+def test_student_side_guardian_list_shows_parent_info(student_client, parent_client):
+    invite = student_client.post(
+        "/students/me/guardians", json={"parent_email": "rolematrix-parent@example.com"}
+    )
+    assert invite.status_code == 201
+    body = invite.json()
+    assert body["parent_name"] == "Role Matrix Parent"
+    assert body["parent_email"] == "rolematrix-parent@example.com"
+
+    listing = student_client.get("/students/me/guardians").json()
+    assert len(listing) == 1
+    assert listing[0]["parent_name"] == "Role Matrix Parent"
+
+
 def test_unapproved_mentor_blocks_request_even_with_full_consent(client, db_session):
     """A registered-but-not-yet-approved mentor must be unreachable for
     requests, independent of the student's consent status entirely --

@@ -271,6 +271,8 @@ export interface GuardianRelationship {
   verified_at: string | null;
   student_name?: string | null;
   student_email?: string | null;
+  parent_name?: string | null;
+  parent_email?: string | null;
 }
 
 export type ConsentType = "mentorship" | "data_sharing";

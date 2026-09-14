@@ -94,16 +94,40 @@ def invite_guardian(
     db.add(relationship)
     db.commit()
     db.refresh(relationship)
-    return relationship
+    return GuardianRelationshipRead(
+        id=relationship.id,
+        student_id=relationship.student_id,
+        parent_id=relationship.parent_id,
+        status=relationship.status,
+        created_at=relationship.created_at,
+        verified_at=relationship.verified_at,
+        parent_name=parent.full_name,
+        parent_email=parent.email,
+    )
 
 
 @router.get("/me/guardians", response_model=list[GuardianRelationshipRead])
 def list_my_guardians(
     current_user: User = Depends(require_student), db: Session = Depends(get_db)
-) -> list[GuardianRelationship]:
-    return (
+) -> list[GuardianRelationshipRead]:
+    relationships = (
         db.query(GuardianRelationship)
         .filter(GuardianRelationship.student_id == current_user.id)
         .order_by(GuardianRelationship.created_at.desc())
         .all()
     )
+    parent_ids = {r.parent_id for r in relationships}
+    parents = {u.id: u for u in db.query(User).filter(User.id.in_(parent_ids)).all()}
+    return [
+        GuardianRelationshipRead(
+            id=r.id,
+            student_id=r.student_id,
+            parent_id=r.parent_id,
+            status=r.status,
+            created_at=r.created_at,
+            verified_at=r.verified_at,
+            parent_name=parents[r.parent_id].full_name if r.parent_id in parents else None,
+            parent_email=parents[r.parent_id].email if r.parent_id in parents else None,
+        )
+        for r in relationships
+    ]

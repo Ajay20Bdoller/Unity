@@ -117,6 +117,9 @@ export function SiteNav() {
               <Link href="/student/mentorship" className="rounded-md px-2 py-1.5 hover:bg-border/30">
                 {t("nav.mentorship")}
               </Link>
+              <Link href="/student/guardians" className="rounded-md px-2 py-1.5 hover:bg-border/30">
+                {t("nav.guardian")}
+              </Link>
             </>
           )}
           {user?.role === "mentor" && (

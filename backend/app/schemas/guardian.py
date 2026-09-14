@@ -19,5 +19,9 @@ class GuardianRelationshipRead(BaseModel):
     status: GuardianRelationshipStatus
     created_at: datetime
     verified_at: datetime | None
+    # populated for the parent-facing endpoints (which student this is)
     student_name: str | None = None
     student_email: str | None = None
+    # populated for the student-facing endpoints (which parent this is)
+    parent_name: str | None = None
+    parent_email: str | None = None
