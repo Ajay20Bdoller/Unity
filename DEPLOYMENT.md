@@ -140,7 +140,7 @@ folder already tells it what to run.
 
 
 
-## 6. Smoke-test checklist before inviting anyone
+## 5. Smoke-test checklist before inviting anyone
 
 - [ ] Register a real test account for each role (student, parent,
       mentor, school_admin) and confirm registration + login works
