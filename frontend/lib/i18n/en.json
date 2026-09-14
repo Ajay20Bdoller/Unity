@@ -35,7 +35,20 @@
     "step6Title": "Get guidance",
     "step6Detail": "Talk to a mentor when you need one.",
     "step7Title": "Track progress",
-    "step7Detail": "Watch how far you’ve come."
+    "step7Detail": "Watch how far you’ve come.",
+    "goToDashboard": "Go to dashboard",
+    "featuredCareersTitle": "Careers to explore",
+    "featuredCareersSubtitle": "A few starting points — browse the full list for more.",
+    "viewAllCareers": "View all careers",
+    "whyTitle": "What Unity gives you",
+    "why1Title": "Ask anything",
+    "why1Detail": "An AI assistant that answers career questions in plain language, any time.",
+    "why2Title": "Real mentors",
+    "why2Detail": "Talk to people already working in the field, with your parent's consent.",
+    "why3Title": "Your language",
+    "why3Detail": "Use Unity in Hindi, Bengali, Telugu, Punjabi, or English.",
+    "why4Title": "Free to learn",
+    "why4Detail": "Courses and skills, at no cost, at your own pace."
   },
   "auth": {
     "loginTitle": "Log in",

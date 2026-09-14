@@ -86,10 +86,23 @@ export function SiteNav() {
   return (
     <nav className="sticky top-0 z-20 border-b border-border bg-background/80 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
-        <Link href="/" className="font-display text-lg font-semibold text-ink">
+        {/* Logged in: the logo goes straight to the dashboard, never
+            back to the marketing landing page — that page's CTAs are
+            aimed at someone who hasn't signed up yet ("Start
+            exploring" -> /register), so landing there while already
+            authenticated reads as being asked to log in again. */}
+        <Link
+          href={user ? "/dashboard" : "/"}
+          className="font-display text-lg font-semibold text-ink"
+        >
           {t("nav.brand")}
         </Link>
         <div className="flex items-center gap-1 text-sm text-ink sm:gap-2">
+          {user && (
+            <Link href="/dashboard" className="rounded-md px-2 py-1.5 hover:bg-border/30">
+              {t("nav.dashboard")}
+            </Link>
+          )}
           <Link href="/careers" className="rounded-md px-2 py-1.5 hover:bg-border/30">
             {t("nav.careers")}
           </Link>
@@ -98,9 +111,6 @@ export function SiteNav() {
           </Link>
           {user?.role === "student" && (
             <>
-              <Link href="/student/profile" className="rounded-md px-2 py-1.5 hover:bg-border/30">
-                {t("nav.myProfile")}
-              </Link>
               <Link href="/student/assessment" className="rounded-md px-2 py-1.5 hover:bg-border/30">
                 {t("nav.assessment")}
               </Link>
@@ -111,9 +121,6 @@ export function SiteNav() {
           )}
           {user?.role === "mentor" && (
             <>
-              <Link href="/mentor/profile" className="rounded-md px-2 py-1.5 hover:bg-border/30">
-                {t("nav.myProfile")}
-              </Link>
               <Link href="/mentor/requests" className="rounded-md px-2 py-1.5 hover:bg-border/30">
                 {t("nav.requests")}
               </Link>
@@ -132,21 +139,28 @@ export function SiteNav() {
               {t("nav.myStudents")}
             </Link>
           )}
-          {user && (
-            <Link href="/announcements" className="rounded-md px-2 py-1.5 hover:bg-border/30">
-              {t("nav.announcements")}
-            </Link>
-          )}
           {user?.role === "admin" && (
             <Link href="/admin" className="rounded-md px-2 py-1.5 hover:bg-border/30">
               {t("nav.admin")}
             </Link>
           )}
-          {user ? (
-            <Link href="/dashboard" className="rounded-md px-2 py-1.5 hover:bg-border/30">
-              {t("nav.dashboard")}
+          {user && (
+            <Link href="/announcements" className="rounded-md px-2 py-1.5 hover:bg-border/30">
+              {t("nav.announcements")}
             </Link>
-          ) : (
+          )}
+          {/* Profile-type links always last, per explicit preference */}
+          {user?.role === "student" && (
+            <Link href="/student/profile" className="rounded-md px-2 py-1.5 hover:bg-border/30">
+              {t("nav.myProfile")}
+            </Link>
+          )}
+          {user?.role === "mentor" && (
+            <Link href="/mentor/profile" className="rounded-md px-2 py-1.5 hover:bg-border/30">
+              {t("nav.myProfile")}
+            </Link>
+          )}
+          {!user && (
             <Link href="/login" className="rounded-md px-2 py-1.5 hover:bg-border/30">
               {t("nav.login")}
             </Link>
