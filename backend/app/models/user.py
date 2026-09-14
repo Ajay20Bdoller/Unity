@@ -51,6 +51,16 @@ class User(Base):
         String(20), unique=True, index=True, nullable=True
     )
     google_id: Mapped[str | None] = mapped_column(String(255), unique=True, index=True, nullable=True)
+    # Checked against the access token's `iat` claim in get_current_user
+    # (see api/deps.py) -- revoking refresh tokens on a password change
+    # stops future token *renewal*, but a still-unexpired access token
+    # already issued (now valid up to 7 days, see JWT_ACCESS_TOKEN_
+    # EXPIRE_MINUTES) would otherwise keep working regardless, which
+    # defeats the point of a password change meant to lock out a
+    # compromised session/stolen token.
+    password_changed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[UserRole] = mapped_column(

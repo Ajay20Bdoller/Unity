@@ -31,6 +31,7 @@ from app.models.profiles import (
 from app.models.refresh_token import RefreshToken
 from app.models.user import SELF_REGISTERABLE_ROLES, User, UserRole
 from app.schemas.auth import (
+    ChangePasswordRequest,
     ForgotPasswordOTPResponse,
     ForgotPasswordRequest,
     GoogleAuthConfig,
@@ -281,6 +282,42 @@ def read_current_user(current_user: User = Depends(get_current_user)) -> User:
     return current_user
 
 
+@router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
+def change_password(
+    payload: ChangePasswordRequest,
+    response: Response,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> None:
+    """Self-service password change for anyone already logged in and
+    who knows their current password -- no OTP involved at all, unlike
+    /forgot-password (which exists for when you *don't* know it). The
+    routine, day-to-day way to change a password; forgot-password is
+    the recovery path for when this one isn't available."""
+    if not verify_password(payload.current_password, current_user.hashed_password):
+        raise HTTPException(status_code=401, detail="Current password is incorrect")
+
+    current_user.hashed_password = hash_password(payload.new_password)
+    current_user.password_changed_at = datetime.now(timezone.utc)
+    db.add(current_user)
+
+    # Same reasoning as /forgot-password/reset: log out everywhere,
+    # including this session, so the person re-authenticates with the
+    # new password rather than silently trusting the old session.
+    active_refresh_tokens = (
+        db.query(RefreshToken)
+        .filter(RefreshToken.user_id == current_user.id, RefreshToken.revoked_at.is_(None))
+        .all()
+    )
+    now = datetime.now(timezone.utc)
+    for token in active_refresh_tokens:
+        token.revoked_at = now
+        db.add(token)
+
+    db.commit()
+    _clear_auth_cookies(response)
+
+
 @router.post("/forgot-password/request-otp", response_model=ForgotPasswordOTPResponse)
 def request_password_reset_otp(
     payload: ForgotPasswordRequest, request: Request, db: Session = Depends(get_db)
@@ -343,6 +380,7 @@ def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db))
         raise invalid
 
     user.hashed_password = hash_password(payload.new_password)
+    user.password_changed_at = datetime.now(timezone.utc)
     reset_request.used = True
     db.add(user)
     db.add(reset_request)

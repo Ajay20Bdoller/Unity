@@ -168,6 +168,11 @@ export function SiteNav() {
               {t("nav.login")}
             </Link>
           )}
+          {user && (
+            <Link href="/settings" className="rounded-md px-2 py-1.5 hover:bg-border/30">
+              {t("nav.settings")}
+            </Link>
+          )}
 
           <div className="ml-1 flex items-center gap-1 border-l border-border pl-2">
             <LanguagePicker />

@@ -16,7 +16,8 @@
     "switchToDark": "Switch to dark mode",
     "announcements": "Announcements",
     "sessions": "Sessions",
-    "guardian": "Parent/Guardian"
+    "guardian": "Parent/Guardian",
+    "settings": "Settings"
   },
   "home": {
     "heroTitle": "A career companion for students who haven’t been shown the map yet.",

@@ -33,6 +33,18 @@ class ResetPasswordRequest(BaseModel):
         return value
 
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def password_min_length(cls, value: str) -> str:
+        if len(value) < 8:
+            raise ValueError("Password must be at least 8 characters long")
+        return value
+
+
 class GoogleAuthConfig(BaseModel):
     enabled: bool
     client_id: str | None = None

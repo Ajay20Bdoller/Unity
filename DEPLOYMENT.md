@@ -164,6 +164,12 @@ everyone else, just on your real domain instead of localhost:
 3. The nav shows an "Admin" link automatically, because your account's
    role is `admin` — nothing else to configure, then or later.
 
+**To change your password whenever you want** (not just when you've
+forgotten it): while logged in, go to `/settings` — current password,
+new password, done. No terminal, no OTP, no code. This is the routine
+way to change a password; the options below are for when you can't
+log in at all.
+
 **If you forget the password later:** same `/forgot-password` flow any
 user uses — works for the admin account too, *if* you gave it a
 mobile number in step 5. If you skipped `--mobile`, there's no

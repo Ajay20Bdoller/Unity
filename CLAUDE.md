@@ -140,6 +140,30 @@ the access token server-side (see `require_*` deps in §4).
   account confirming the link) — only the OTP step is bypassed, not
   the whole chain. Sets `verification_method="admin_override"` so this
   is distinguishable in the data from a real OTP verification.
+- **Self-service password change:** `POST /auth/change-password`
+  (logged in, knows current password — no OTP at all, unlike forgot-
+  password which exists for when you don't know it). Verifies the
+  current password, then — like a forgot-password reset — invalidates
+  every prior session. This surfaced a real gap worth documenting:
+  revoking refresh tokens alone does NOT invalidate an already-issued
+  access token (a stateless JWT keeps working until it naturally
+  expires, now up to 7 days, regardless of refresh-token revocation).
+  Fixed by adding `users.password_changed_at` and checking it against
+  the JWT's `iat` claim in `get_current_user` — any token issued
+  before the last password change is rejected outright, closing the
+  gap for a leaked/stolen token specifically (found by testing the
+  literal "attacker replays an old cookie after the legitimate user
+  changes their password" scenario, not just the happy path). The
+  comparison is intentionally whole-second granularity (`int(...
+  timestamp())` on both sides, not raw datetime comparison) — JWT
+  `iat` is inherently truncated to whole seconds, so comparing it
+  against `password_changed_at`'s microsecond precision directly
+  caused real, reproducible false rejections (22 failing tests) for
+  the extremely common register-then-immediately-log-in flow, where
+  both timestamps land in the same second. The accepted trade-off: a
+  token issued in the *exact same second* as a password change might
+  not be rejected (a narrow, low-probability window) in exchange for
+  never breaking normal same-second flows for everyone.
 - **Google Sign-In:** popup flow via Google Identity Services (frontend
   `components/google-sign-in-button.tsx`) — only a Client ID is needed
   server-side (`GOOGLE_CLIENT_ID`), never a client secret, since the

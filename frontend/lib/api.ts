@@ -519,6 +519,11 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ mobile_number, otp, new_password }),
     }),
+  changePassword: (current_password: string, new_password: string) =>
+    request<void>("/auth/change-password", {
+      method: "POST",
+      body: JSON.stringify({ current_password, new_password }),
+    }),
   googleAuthConfig: () =>
     request<{ enabled: boolean; client_id: string | null }>("/auth/google/config"),
   googleAuth: (id_token: string) =>
