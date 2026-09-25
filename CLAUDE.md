@@ -140,6 +140,16 @@ the access token server-side (see `require_*` deps in §4).
   account confirming the link) — only the OTP step is bypassed, not
   the whole chain. Sets `verification_method="admin_override"` so this
   is distinguishable in the data from a real OTP verification.
+- **About Us / team profiles:** `team_members` (migration 0020) —
+  admin-curated profiles for the public `/about` page (name, role
+  title like "Founder & CTO", bio, optional photo/LinkedIn), ordered
+  by `display_order`. Deliberately not tied to a real `users` account
+  — no self-signup path, admin-only creation via `/admin/team`
+  (`GET /about-us/team` is the only public endpoint). The first entry
+  gets a distinct, larger "featured" layout on the About page;
+  additional members show in a simpler grid below.
+- **Logout lives only in `/settings`** now, not on the dashboard —
+  moved on request.
 - **Self-service password change:** `POST /auth/change-password`
   (logged in, knows current password — no OTP at all, unlike forgot-
   password which exists for when you don't know it). Verifies the

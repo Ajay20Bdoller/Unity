@@ -11,7 +11,7 @@ import { Field } from "@/components/ui/field";
 import { SiteNav } from "@/components/site-nav";
 
 export default function SettingsPage() {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   const router = useRouter();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -107,6 +107,14 @@ export default function SettingsPage() {
               </Button>
             </form>
           )}
+        </Card>
+
+        <Card className="mt-4">
+          <h2 className="font-medium text-ink">Log out</h2>
+          <p className="mt-1 text-sm text-muted">End your session on this device.</p>
+          <Button variant="secondary" className="mt-3" onClick={logout}>
+            Log out
+          </Button>
         </Card>
       </main>
     </>

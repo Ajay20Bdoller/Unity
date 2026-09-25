@@ -109,6 +109,9 @@ export function SiteNav() {
           <Link href="/courses" className="rounded-md px-2 py-1.5 hover:bg-border/30">
             {t("nav.courses")}
           </Link>
+          <Link href="/about" className="rounded-md px-2 py-1.5 hover:bg-border/30">
+            {t("nav.aboutUs")}
+          </Link>
           {user?.role === "student" && (
             <>
               <Link href="/student/assessment" className="rounded-md px-2 py-1.5 hover:bg-border/30">

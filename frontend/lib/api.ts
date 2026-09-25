@@ -498,6 +498,16 @@ export interface AdminGuardianRelationship {
   consents: AdminConsentSummary[];
 }
 
+export interface TeamMember {
+  id: string;
+  full_name: string;
+  role_title: string;
+  bio: string | null;
+  photo_url: string | null;
+  linkedin_url: string | null;
+  display_order: number;
+}
+
 export const api = {
   register: (input: RegisterInput) =>
     request<User>("/auth/register", {
@@ -543,6 +553,30 @@ export const api = {
     }),
   languages: () => request<Language[]>("/languages"),
   states: () => request<State[]>("/states"),
+  team: () => request<TeamMember[]>("/about-us/team"),
+  adminTeam: () => request<TeamMember[]>("/admin/team"),
+  adminCreateTeamMember: (payload: {
+    full_name: string;
+    role_title: string;
+    bio?: string;
+    photo_url?: string;
+    linkedin_url?: string;
+    display_order?: number;
+  }) => request<TeamMember>("/admin/team", { method: "POST", body: JSON.stringify(payload) }),
+  adminUpdateTeamMember: (
+    id: string,
+    payload: Partial<{
+      full_name: string;
+      role_title: string;
+      bio: string;
+      photo_url: string;
+      linkedin_url: string;
+      display_order: number;
+    }>
+  ) =>
+    request<TeamMember>(`/admin/team/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
+  adminDeleteTeamMember: (id: string) =>
+    request<void>(`/admin/team/${id}`, { method: "DELETE" }),
   dashboardSections: () => request<DashboardSection[]>("/dashboard/sections"),
   aiChat: (message: string, history?: ChatMessage[]) =>
     request<AIChatResponse>("/ai/chat", {

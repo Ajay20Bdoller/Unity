@@ -3,12 +3,11 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { api, ApiError, type DashboardSection } from "@/lib/api";
-import { Button } from "@/components/ui/button";
 import { SECTION_REGISTRY } from "@/components/dashboard/section-registry";
 import { SiteNav } from "@/components/site-nav";
 
 export default function DashboardPage() {
-  const { user, loading, logout } = useAuth();
+  const { user, loading } = useAuth();
   const [sections, setSections] = useState<DashboardSection[] | null>(null);
   const [sectionsError, setSectionsError] = useState<string | null>(null);
 
@@ -42,12 +41,6 @@ export default function DashboardPage() {
     <>
       <SiteNav />
       <main className="mx-auto max-w-4xl px-6 py-12">
-        <header className="flex items-center justify-end">
-          <Button variant="secondary" onClick={logout}>
-            Log out
-          </Button>
-        </header>
-
         <div className="mt-6 space-y-6">
           {sectionsError && <p className="text-sm text-danger">{sectionsError}</p>}
           {sections?.map((section) => {

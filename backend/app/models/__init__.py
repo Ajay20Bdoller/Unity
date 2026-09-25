@@ -43,4 +43,5 @@ from app.models.profiles import (  # noqa: F401
     StudentProfile,
 )
 from app.models.refresh_token import RefreshToken  # noqa: F401
+from app.models.team import TeamMember  # noqa: F401
 from app.models.user import SELF_REGISTERABLE_ROLES, User, UserRole  # noqa: F401
