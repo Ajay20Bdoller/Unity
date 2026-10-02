@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import (
@@ -36,6 +36,23 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    """Standard, low-risk response headers that were missing entirely —
+    none of these change behavior for this app's own frontend, they
+    only add defense-in-depth against things like clickjacking and
+    MIME-sniffing for anyone else who might ever load an API response
+    directly (e.g. an error page) in a browser."""
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    if settings.ENVIRONMENT != "development":
+        response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
+    return response
+
 
 app.include_router(health.router)
 app.include_router(auth.router)

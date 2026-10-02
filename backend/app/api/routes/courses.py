@@ -34,23 +34,32 @@ def _course_modules(db: Session, course_id: uuid.UUID) -> list[ModuleRead]:
     modules = (
         db.query(Module).filter(Module.course_id == course_id).order_by(Module.display_order).all()
     )
-    result = []
-    for module in modules:
-        lessons = (
-            db.query(Lesson)
-            .filter(Lesson.module_id == module.id)
-            .order_by(Lesson.display_order)
-            .all()
+    if not modules:
+        return []
+
+    module_ids = [m.id for m in modules]
+    all_lessons = (
+        db.query(Lesson)
+        .filter(Lesson.module_id.in_(module_ids))
+        .order_by(Lesson.display_order)
+        .all()
+    )
+    lessons_by_module: dict[uuid.UUID, list[Lesson]] = {}
+    for lesson in all_lessons:
+        lessons_by_module.setdefault(lesson.module_id, []).append(lesson)
+
+    return [
+        ModuleRead(
+            id=module.id,
+            title=module.title,
+            display_order=module.display_order,
+            lessons=[
+                LessonRead.model_validate(lesson)
+                for lesson in lessons_by_module.get(module.id, [])
+            ],
         )
-        result.append(
-            ModuleRead(
-                id=module.id,
-                title=module.title,
-                display_order=module.display_order,
-                lessons=[LessonRead.model_validate(lesson) for lesson in lessons],
-            )
-        )
-    return result
+        for module in modules
+    ]
 
 
 def _course_lesson_ids(db: Session, course_id: uuid.UUID) -> list[uuid.UUID]:
@@ -115,14 +124,21 @@ def get_course_with_my_progress(
     modules = (
         db.query(Module).filter(Module.course_id == course.id).order_by(Module.display_order).all()
     )
+    module_ids = [m.id for m in modules]
+    all_lessons = (
+        db.query(Lesson)
+        .filter(Lesson.module_id.in_(module_ids))
+        .order_by(Lesson.display_order)
+        .all()
+        if module_ids
+        else []
+    )
+    lessons_by_module: dict[uuid.UUID, list[Lesson]] = {}
+    for lesson in all_lessons:
+        lessons_by_module.setdefault(lesson.module_id, []).append(lesson)
+
     module_reads = []
     for module in modules:
-        lessons = (
-            db.query(Lesson)
-            .filter(Lesson.module_id == module.id)
-            .order_by(Lesson.display_order)
-            .all()
-        )
         module_reads.append(
             ModuleWithProgress(
                 id=module.id,
@@ -133,7 +149,7 @@ def get_course_with_my_progress(
                         **LessonRead.model_validate(lesson).model_dump(),
                         completed=lesson.id in completed_lesson_ids,
                     )
-                    for lesson in lessons
+                    for lesson in lessons_by_module.get(module.id, [])
                 ],
             )
         )

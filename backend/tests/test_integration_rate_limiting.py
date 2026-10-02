@@ -8,6 +8,28 @@ change max_requests/window_seconds, so that's this file's job.
 from app.api.routes.auth import _login_limiter, _register_limiter
 
 
+def test_google_auth_shares_the_login_limiter(client):
+    """Found missing entirely during a deployment audit -- POST /auth/
+    google had no rate limit at all, unlike every other auth endpoint,
+    despite triggering an outbound network call to Google on every
+    request (making it a cheaper resource-exhaustion vector than even
+    password login). This just confirms the limiter check actually
+    fires on this route; the token itself doesn't need to be valid for
+    that, since the limiter check runs before any Google verification.
+    """
+    original_max = _login_limiter.max_requests
+    _login_limiter.max_requests = 3
+    try:
+        for _ in range(3):
+            res = client.post("/auth/google", json={"id_token": "whatever"})
+            assert res.status_code in (401, 503)  # not configured / bad token, but under budget
+
+        blocked = client.post("/auth/google", json={"id_token": "whatever"})
+        assert blocked.status_code == 429
+    finally:
+        _login_limiter.max_requests = original_max
+
+
 def test_login_blocked_after_too_many_attempts(client):
     original_max = _login_limiter.max_requests
     _login_limiter.max_requests = 3

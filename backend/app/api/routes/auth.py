@@ -414,7 +414,7 @@ def google_auth_config() -> GoogleAuthConfig:
 
 @router.post("/google", response_model=GoogleAuthResponse)
 def google_auth(
-    payload: GoogleAuthRequest, response: Response, db: Session = Depends(get_db)
+    payload: GoogleAuthRequest, request: Request, response: Response, db: Session = Depends(get_db)
 ) -> GoogleAuthResponse:
     """Verifies a Google ID token (from the frontend's Google Identity
     Services popup) and either logs the person in (an account already
@@ -426,6 +426,13 @@ def google_auth(
     students), so a new Google sign-in can never skip registration
     entirely — only speed up the identity part of it.
     """
+    # Same budget as regular login -- this endpoint also does an
+    # outbound network call to Google on every request (fetching certs
+    # to verify the token), so without a limit it's a cheaper way to
+    # exhaust resources or hammer Google's endpoint from this server's
+    # IP than even the password-based login path is.
+    _login_limiter.check(get_client_ip(request))
+
     if not settings.GOOGLE_CLIENT_ID:
         raise HTTPException(status_code=503, detail="Google sign-in is not configured")
 

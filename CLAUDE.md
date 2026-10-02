@@ -126,6 +126,26 @@ the access token server-side (see `require_*` deps in §4).
   Conflating these would force a choice between secure cookies and a
   working OTP flow, which isn't a real tradeoff either deployment
   actually needs to make.
+- **Full deployment audit performed** (fresh sandbox, not relying on
+  prior session state): every route's auth dependency checked against
+  source directly (not FastAPI's introspection objects, which gave
+  unreliable results across versions) -- no unintentionally-public
+  endpoint found. One real gap found and fixed: `POST /auth/google`
+  had no rate limiting at all, unlike every other auth endpoint --
+  meaningful since it triggers an outbound network call to Google on
+  every request, making it a cheaper DoS/resource-exhaustion vector
+  than even password login. Now shares `_login_limiter`. Also
+  confirmed: no hashed_password ever appears in any response schema,
+  no hardcoded secrets in source, `.env`/`.env.local` properly
+  gitignored and never committed, `/health` checks real DB
+  connectivity not just process liveness, all backend deps fully
+  pinned, frontend package.json pinned to match its lockfile exactly
+  (two deps had been left as caret ranges). `npm audit` flags a
+  PostCSS advisory pulled in transitively by Next.js — assessed as
+  low-risk for this app specifically (PostCSS is a build-time-only
+  tool here; nothing ever runs user-supplied CSS through it) and left
+  alone rather than forcing a breaking Next.js 16 upgrade mid-audit
+  without dedicated testing time for that migration.
 - **Rate limiting:** per-IP (via X-Forwarded-For, falling back to
   request.client — see `core/rate_limit.py`), not per-account, since an
   attacker doesn't need a valid account to hammer these: login 10/15min,
