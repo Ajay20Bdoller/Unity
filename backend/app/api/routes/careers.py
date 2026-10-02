@@ -65,7 +65,6 @@ def list_careers(
 def get_career(
     slug: str,
     lang: str = Query(default="en"),
-    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> CareerDetail:
     career = db.query(Career).filter(Career.slug == slug).first()

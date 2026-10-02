@@ -24,9 +24,9 @@ def test_category_filter_and_search(client):
     assert all("data" in c["title"].lower() for c in searched)
 
 
-def test_detail_requires_login(client):
+def test_detail_is_public(client):
     res = client.get("/careers/software-engineer")
-    assert res.status_code == 401
+    assert res.status_code == 200
 
 
 def test_detail_includes_related_careers_and_category(student_client):

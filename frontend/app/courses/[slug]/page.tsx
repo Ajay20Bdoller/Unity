@@ -24,8 +24,8 @@ export default function CourseDetailPage() {
   const [enrolling, setEnrolling] = useState(false);
 
   function load() {
-    if (!user) return;
-    const fetcher = user.role === "student" ? api.courseWithMyProgress(slug) : api.course(slug);
+    const fetcher =
+      user?.role === "student" ? api.courseWithMyProgress(slug) : api.course(slug);
     fetcher
       .then(setCourse)
       .catch((err) => {
@@ -61,33 +61,6 @@ export default function CourseDetailPage() {
   }
 
   if (authLoading) return null;
-
-  if (!user) {
-    return (
-      <>
-        <SiteNav />
-        <main className="mx-auto max-w-3xl px-6 py-10">
-          <Card>
-            <h1 className="font-display text-lg font-medium text-ink">
-              Log in to see full details
-            </h1>
-            <p className="mt-2 text-sm text-muted">
-              Browsing courses is free — an account (free, takes a minute) unlocks the full
-              lesson list and lets you track your progress.
-            </p>
-            <div className="mt-4 flex gap-3">
-              <Link href="/register">
-                <Button>Create an account</Button>
-              </Link>
-              <Link href="/login">
-                <Button variant="secondary">Log in</Button>
-              </Link>
-            </div>
-          </Card>
-        </main>
-      </>
-    );
-  }
 
   if (notFound) {
     return (

@@ -28,9 +28,9 @@ export default function CareerDetailPage() {
   const [savingInterest, setSavingInterest] = useState(false);
 
   useEffect(() => {
-    if (authLoading || !user) return;
+    if (authLoading) return;
     api
-      .career(slug, user.preferred_language)
+      .career(slug, user?.preferred_language ?? "en")
       .then(setCareer)
       .catch((err) => {
         if (err instanceof ApiError && err.status === 404) setNotFound(true);
@@ -61,33 +61,6 @@ export default function CareerDetailPage() {
   }
 
   if (authLoading) return null;
-
-  if (!user) {
-    return (
-      <>
-        <SiteNav />
-        <main className="mx-auto max-w-3xl px-6 py-10">
-          <Card>
-            <h1 className="font-display text-lg font-medium text-ink">
-              Log in to see full details
-            </h1>
-            <p className="mt-2 text-sm text-muted">
-              Browsing careers is free — an account (free, takes a minute) unlocks the full
-              picture: subjects, eligibility, skills, exams, and pathways.
-            </p>
-            <div className="mt-4 flex gap-3">
-              <Link href="/register">
-                <Button>Create an account</Button>
-              </Link>
-              <Link href="/login">
-                <Button variant="secondary">Log in</Button>
-              </Link>
-            </div>
-          </Card>
-        </main>
-      </>
-    );
-  }
 
   if (notFound) {
     return (

@@ -22,9 +22,9 @@ def test_course_listing_is_public(client):
     assert any(c["slug"] == "intro-to-programming" for c in courses.json())
 
 
-def test_course_detail_requires_login(client):
+def test_course_detail_is_public(client):
     res = client.get("/courses/intro-to-programming")
-    assert res.status_code == 401
+    assert res.status_code == 200
 
 
 def test_course_detail_for_logged_in_user(student_client):
