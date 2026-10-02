@@ -5,7 +5,8 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth, ApiError } from "@/lib/auth-context";
 import { useLanguage } from "@/lib/language-context";
-import { api, type RegisterInput, type State, type UserRole } from "@/lib/api";
+import { api, type RegisterInput, type UserRole } from "@/lib/api";
+import { INDIAN_STATES, COUNTRIES } from "@/lib/location-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/field";
@@ -59,12 +60,7 @@ function RegisterForm() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [states, setStates] = useState<State[]>([]);
   const [googleId, setGoogleId] = useState<string | null>(null);
-
-  useEffect(() => {
-    api.states().then(setStates).catch(() => setStates([]));
-  }, []);
 
   // Arriving from GoogleSignInButton's "new_user" redirect: pre-fill
   // what Google gave us (email, name) and carry the google_id through
@@ -311,20 +307,27 @@ function RegisterForm() {
                       className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/40"
                     >
                       <option value="">{t("register.relationSelect")}</option>
-                      {states.map((s) => (
-                        <option key={s.id} value={s.name}>
-                          {s.name}
+                      {INDIAN_STATES.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
                         </option>
                       ))}
                     </select>
                   </Field>
                   <Field label={t("register.countryLabel")} htmlFor="country">
-                    <Input
+                    <select
                       id="country"
                       required
                       value={form.country}
                       onChange={(e) => set("country", e.target.value)}
-                    />
+                      className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    >
+                      {COUNTRIES.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
                   </Field>
                 </div>
               </>

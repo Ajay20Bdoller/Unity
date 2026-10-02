@@ -1,43 +1,31 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-// Lightweight, cookie-presence-only check (not validity -- an expired
-// or tampered token still passes this and gets caught properly by the
-// API's real auth check, which is what actually protects every piece
-// of data). This middleware only exists to redirect faster and avoid
-// a flash of "loading..." before each page's own client-side useAuth()
-// check would otherwise catch it -- it is not the security boundary.
-const PROTECTED_PREFIXES = [
-  "/dashboard",
-  "/settings",
-  "/student",
-  "/parent",
-  "/mentor",
-  "/school",
-  "/admin",
-];
-
-export function middleware(request: NextRequest) {
-  const isProtected = PROTECTED_PREFIXES.some((prefix) =>
-    request.nextUrl.pathname.startsWith(prefix)
-  );
-  if (!isProtected) return NextResponse.next();
-
-  const token = request.cookies.get("access_token");
-  if (!token) {
-    const loginUrl = new URL("/login", request.url);
-    return NextResponse.redirect(loginUrl);
-  }
+// This middleware used to redirect to /login based on whether an
+// access_token cookie was present on the request. That only works
+// when the frontend and backend share a domain (e.g. both on
+// localhost in dev). In a real deployment the backend is on its own
+// domain (e.g. Railway) and the frontend on its own (e.g. Vercel) --
+// the cookie the backend sets is scoped to *its* domain and is never
+// sent on a request to the frontend's own pages, so this check always
+// saw "no cookie" and redirected every single visitor, logged in or
+// not, straight back to /login on every protected page. That's not a
+// partial bug, it's total: nobody could ever reach /dashboard or any
+// other protected route post-deploy.
+//
+// There is no reliable way to check auth state from this middleware
+// without an extra network round-trip to the backend on every
+// navigation (defeating the point of a "fast" check) or restructuring
+// the whole auth flow around a same-domain session cookie. Given each
+// page already does its own correct, working check via useAuth()
+// (which calls the backend with credentials: "include" and so
+// correctly carries the cross-origin cookie), this middleware is
+// removed entirely rather than patched -- a same-domain-only
+// optimization that silently breaks the real, cross-domain deployment
+// is worse than no optimization at all.
+export function middleware() {
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: [
-    "/dashboard/:path*",
-    "/settings/:path*",
-    "/student/:path*",
-    "/parent/:path*",
-    "/mentor/:path*",
-    "/school/:path*",
-    "/admin/:path*",
-  ],
+  matcher: [],
 };
