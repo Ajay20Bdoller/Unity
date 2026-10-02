@@ -83,6 +83,7 @@ class MentorProfile(Base):
     date_of_birth: Mapped[date | None] = mapped_column(Date, nullable=True)
     bio: Mapped[str | None] = mapped_column(Text, nullable=True)
     availability_note: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    photo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     # A mentor is invisible to students (not returned by GET /mentors,
     # and can't receive requests even by direct API call — see
     # mentorship.py) until an admin approves them. Registering does not

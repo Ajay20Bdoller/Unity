@@ -97,7 +97,25 @@ export default function StudentMentorshipPage() {
             {mentors.length === 0 && <p className="text-sm text-muted">No mentors available yet.</p>}
             {mentors.map((mentor) => (
               <Card key={mentor.user_id}>
-                <p className="font-medium text-ink">{mentor.full_name}</p>
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full border border-border">
+                    {mentor.photo_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={mentor.photo_url}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-primary/15">
+                        <span className="font-display text-lg text-primary">
+                          {mentor.full_name.charAt(0)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <p className="font-medium text-ink">{mentor.full_name}</p>
+                </div>
                 {mentor.bio && <p className="mt-1 text-sm text-muted">{mentor.bio}</p>}
                 {mentor.availability_note && (
                   <p className="mt-1 text-xs text-muted">Availability: {mentor.availability_note}</p>

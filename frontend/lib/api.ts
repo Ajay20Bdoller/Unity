@@ -300,6 +300,7 @@ export interface MentorPublicProfile {
   full_name: string;
   bio: string | null;
   availability_note: string | null;
+  photo_url: string | null;
   expertise: string[];
   languages: string[];
 }
@@ -664,12 +665,16 @@ export const api = {
     return request<MentorPublicProfile[]>(`/mentors${suffix}`);
   },
   myMentorProfile: () => request<MentorPublicProfile>("/mentors/me"),
-  updateMentorProfile: (payload: { bio?: string; availability_note?: string }) =>
+  updateMentorProfile: (payload: { bio?: string; availability_note?: string; photo_url?: string }) =>
     request<MentorPublicProfile>("/mentors/me", { method: "PATCH", body: JSON.stringify(payload) }),
   addMentorExpertise: (categoryId: string) =>
     request<void>(`/mentors/me/expertise/${categoryId}`, { method: "POST" }),
+  removeMentorExpertise: (categoryId: string) =>
+    request<void>(`/mentors/me/expertise/${categoryId}`, { method: "DELETE" }),
   addMentorLanguage: (languageCode: string) =>
     request<void>(`/mentors/me/languages/${languageCode}`, { method: "POST" }),
+  removeMentorLanguage: (languageCode: string) =>
+    request<void>(`/mentors/me/languages/${languageCode}`, { method: "DELETE" }),
   requestMentorship: (mentorId: string, message: string) =>
     request<MentorshipRequest>("/students/me/mentorship-requests", {
       method: "POST",

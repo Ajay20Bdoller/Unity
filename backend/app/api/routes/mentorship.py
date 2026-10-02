@@ -59,6 +59,7 @@ def _public_profile(db: Session, mentor: User, profile: MentorProfile | None) ->
         full_name=mentor.full_name,
         bio=profile.bio if profile else None,
         availability_note=profile.availability_note if profile else None,
+        photo_url=profile.photo_url if profile else None,
         expertise=expertise_keys,
         languages=language_codes,
     )
@@ -132,6 +133,25 @@ def add_expertise(
         db.commit()
 
 
+@mentor_router.delete("/expertise/{category_id}", status_code=204)
+def remove_expertise(
+    category_id: uuid.UUID,
+    current_user: User = Depends(require_mentor),
+    db: Session = Depends(get_db),
+) -> None:
+    row = (
+        db.query(MentorExpertise)
+        .filter(
+            MentorExpertise.mentor_id == current_user.id,
+            MentorExpertise.career_category_id == category_id,
+        )
+        .first()
+    )
+    if row:
+        db.delete(row)
+        db.commit()
+
+
 @mentor_router.post("/languages/{language_code}", status_code=204)
 def add_language(
     language_code: str,
@@ -147,6 +167,25 @@ def add_language(
     )
     if not exists:
         db.add(MentorLanguage(mentor_id=current_user.id, language_code=language_code))
+        db.commit()
+
+
+@mentor_router.delete("/languages/{language_code}", status_code=204)
+def remove_language(
+    language_code: str,
+    current_user: User = Depends(require_mentor),
+    db: Session = Depends(get_db),
+) -> None:
+    row = (
+        db.query(MentorLanguage)
+        .filter(
+            MentorLanguage.mentor_id == current_user.id,
+            MentorLanguage.language_code == language_code,
+        )
+        .first()
+    )
+    if row:
+        db.delete(row)
         db.commit()
 
 

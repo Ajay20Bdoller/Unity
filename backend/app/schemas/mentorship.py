@@ -9,6 +9,7 @@ from app.models.mentorship import MentorshipRequestStatus
 class MentorProfileUpdate(BaseModel):
     bio: str | None = None
     availability_note: str | None = None
+    photo_url: str | None = None
 
 
 class MentorPublicProfile(BaseModel):
@@ -16,6 +17,7 @@ class MentorPublicProfile(BaseModel):
     full_name: str
     bio: str | None
     availability_note: str | None
+    photo_url: str | None
     expertise: list[str]  # career category keys
     languages: list[str]  # language codes
 

@@ -18,6 +18,7 @@ export default function MentorProfilePage() {
   const [profile, setProfile] = useState<MentorPublicProfile | null>(null);
   const [bio, setBio] = useState("");
   const [availability, setAvailability] = useState("");
+  const [photoUrl, setPhotoUrl] = useState("");
   const [categories, setCategories] = useState<CareerCategory[]>([]);
   const [languages, setLanguages] = useState<Language[]>([]);
   const [saving, setSaving] = useState(false);
@@ -30,6 +31,7 @@ export default function MentorProfilePage() {
         setProfile(mine);
         setBio(mine.bio ?? "");
         setAvailability(mine.availability_note ?? "");
+        setPhotoUrl(mine.photo_url ?? "");
       })
       .catch(() => {});
   }
@@ -45,20 +47,28 @@ export default function MentorProfilePage() {
   async function saveProfile() {
     setSaving(true);
     try {
-      await api.updateMentorProfile({ bio, availability_note: availability });
+      await api.updateMentorProfile({ bio, availability_note: availability, photo_url: photoUrl });
       load();
     } finally {
       setSaving(false);
     }
   }
 
-  async function toggleExpertise(categoryId: string) {
-    await api.addMentorExpertise(categoryId);
+  async function toggleExpertise(categoryId: string, active: boolean) {
+    if (active) {
+      await api.removeMentorExpertise(categoryId);
+    } else {
+      await api.addMentorExpertise(categoryId);
+    }
     load();
   }
 
-  async function toggleLanguage(code: string) {
-    await api.addMentorLanguage(code);
+  async function toggleLanguage(code: string, active: boolean) {
+    if (active) {
+      await api.removeMentorLanguage(code);
+    } else {
+      await api.addMentorLanguage(code);
+    }
     load();
   }
 
@@ -84,7 +94,22 @@ export default function MentorProfilePage() {
         </p>
 
         <Card className="mt-6">
-          <label className="text-sm font-medium text-ink">Bio</label>
+          {photoUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={photoUrl}
+              alt=""
+              className="mb-3 h-20 w-20 rounded-full border border-border object-cover"
+            />
+          )}
+          <label className="text-sm font-medium text-ink">Photo URL</label>
+          <Input
+            value={photoUrl}
+            onChange={(e) => setPhotoUrl(e.target.value)}
+            placeholder="https://..."
+            className="mt-1"
+          />
+          <label className="mt-3 block text-sm font-medium text-ink">Bio</label>
           <textarea
             value={bio}
             onChange={(e) => setBio(e.target.value)}
@@ -107,13 +132,12 @@ export default function MentorProfilePage() {
           <p className="text-sm font-medium text-ink">Expertise</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {categories.map((c) => {
-              const active = profile?.expertise.includes(c.key);
+              const active = Boolean(profile?.expertise.includes(c.key));
               return (
                 <button
                   key={c.key}
                   type="button"
-                  disabled={active}
-                  onClick={() => toggleExpertise(c.id)}
+                  onClick={() => toggleExpertise(c.id, active)}
                   className={`rounded-full border px-3 py-1.5 text-xs ${
                     active
                       ? "border-primary bg-primary/10 text-primary"
@@ -121,6 +145,7 @@ export default function MentorProfilePage() {
                   }`}
                 >
                   {c.name}
+                  {active && " ×"}
                 </button>
               );
             })}
@@ -131,13 +156,12 @@ export default function MentorProfilePage() {
           <p className="text-sm font-medium text-ink">Languages</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {languages.map((l) => {
-              const active = profile?.languages.includes(l.code);
+              const active = Boolean(profile?.languages.includes(l.code));
               return (
                 <button
                   key={l.code}
                   type="button"
-                  disabled={active}
-                  onClick={() => toggleLanguage(l.code)}
+                  onClick={() => toggleLanguage(l.code, active)}
                   className={`rounded-full border px-3 py-1.5 text-xs ${
                     active
                       ? "border-primary bg-primary/10 text-primary"
@@ -145,6 +169,7 @@ export default function MentorProfilePage() {
                   }`}
                 >
                   {l.native_name}
+                  {active && " ×"}
                 </button>
               );
             })}
