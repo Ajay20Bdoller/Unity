@@ -775,6 +775,23 @@ export const api = {
     title: string;
     description: string;
   }) => request<CareerListItem>("/admin/careers", { method: "POST", body: JSON.stringify(payload) }),
+  adminUpdateCareer: (
+    careerId: string,
+    payload: Partial<{
+      title: string;
+      description: string;
+      eligibility: string;
+      subjects: string[];
+      skills: string[];
+      entrance_exams: string[];
+      education_pathway: string;
+      roadmap: string;
+    }>
+  ) =>
+    request<CareerListItem>(`/admin/careers/${careerId}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
   adminCampaigns: () => request<Campaign[]>("/admin/campaigns"),
   adminCreateCampaign: (payload: { key: string; name: string; campaign_type: CampaignType }) =>
     request<Campaign>("/admin/campaigns", { method: "POST", body: JSON.stringify(payload) }),
@@ -788,6 +805,14 @@ export const api = {
     }),
   adminPublishAnnouncement: (id: string) =>
     request<AdminAnnouncement>(`/admin/announcements/${id}/publish`, { method: "POST" }),
+  adminUpdateAnnouncement: (
+    id: string,
+    payload: Partial<{ title: string; content: string; audience: string[] }>
+  ) =>
+    request<AdminAnnouncement>(`/admin/announcements/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
   adminDashboardSections: () => request<AdminDashboardSection[]>("/admin/dashboard-sections"),
   adminSectionRoles: (sectionId: string) =>
     request<RoleDashboardSection[]>(`/admin/dashboard-sections/${sectionId}/roles`),
