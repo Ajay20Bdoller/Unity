@@ -23,6 +23,7 @@ export default function MentorProfilePage() {
   const [categories, setCategories] = useState<CareerCategory[]>([]);
   const [languages, setLanguages] = useState<Language[]>([]);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   function load() {
     if (!user) return;
@@ -47,14 +48,22 @@ export default function MentorProfilePage() {
 
   async function saveProfile() {
     setSaving(true);
+    setSaved(false);
     try {
       await api.updateMentorProfile({ bio, availability_note: availability, photo_url: photoUrl });
       load();
+      setSaved(true);
     } finally {
       setSaving(false);
     }
   }
 
+  // Expertise/language picks save immediately on click (no data lost
+  // if someone navigates away mid-edit) — the Save button below only
+  // covers bio/availability/photo, which need a deliberate "done
+  // editing this text" moment. Both live in one form, one flow, Save
+  // positioned after everything so selecting expertise/languages
+  // doesn't feel skippable or separate from "the form."
   async function toggleExpertise(categoryId: string, active: boolean) {
     if (active) {
       await api.removeMentorExpertise(categoryId);
@@ -91,7 +100,7 @@ export default function MentorProfilePage() {
       <main className="mx-auto max-w-2xl px-6 py-10">
         <h1 className="font-display text-2xl font-medium text-ink">My mentor profile</h1>
         <p className="mt-1 text-sm text-muted">
-          Students will see this when browsing mentors.
+          Students will see this when browsing mentors, once an admin approves your profile.
         </p>
 
         <Card className="mt-6">
@@ -110,27 +119,25 @@ export default function MentorProfilePage() {
             placeholder="https://..."
             className="mt-1"
           />
-          <label className="mt-3 block text-sm font-medium text-ink">Bio</label>
+
+          <label className="mt-4 block text-sm font-medium text-ink">Bio</label>
           <textarea
             value={bio}
             onChange={(e) => setBio(e.target.value)}
             rows={3}
             className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/40"
           />
-          <label className="mt-3 block text-sm font-medium text-ink">Availability</label>
+
+          <label className="mt-4 block text-sm font-medium text-ink">Availability</label>
           <Input
             value={availability}
             onChange={(e) => setAvailability(e.target.value)}
             placeholder="e.g. Weekday evenings IST"
             className="mt-1"
           />
-          <Button className="mt-3" disabled={saving} onClick={saveProfile}>
-            {saving ? "Saving..." : "Save"}
-          </Button>
-        </Card>
 
-        <Card className="mt-4">
-          <p className="text-sm font-medium text-ink">Expertise</p>
+          <p className="mt-5 text-sm font-medium text-ink">Expertise</p>
+          <p className="text-xs text-muted">Tap to select — saves as you go.</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {categories.map((c) => {
               const active = Boolean(profile?.expertise.includes(c.key));
@@ -151,10 +158,9 @@ export default function MentorProfilePage() {
               );
             })}
           </div>
-        </Card>
 
-        <Card className="mt-4">
-          <p className="text-sm font-medium text-ink">Languages</p>
+          <p className="mt-5 text-sm font-medium text-ink">Languages</p>
+          <p className="text-xs text-muted">Tap to select — saves as you go.</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {languages.map((l) => {
               const active = Boolean(profile?.languages.includes(l.code));
@@ -174,6 +180,13 @@ export default function MentorProfilePage() {
                 </button>
               );
             })}
+          </div>
+
+          <div className="mt-6 border-t border-border pt-4">
+            <Button disabled={saving} onClick={saveProfile}>
+              {saving ? "Saving..." : "Save"}
+            </Button>
+            {saved && <span className="ml-3 text-xs text-primary">Saved.</span>}
           </div>
         </Card>
       </main>
