@@ -1,7 +1,13 @@
 def test_default_dashboard_sections_resolve_in_order_for_student(student_client):
     sections = student_client.get("/dashboard/sections").json()
     keys = [s["key"] for s in sections]
-    assert keys == ["welcome", "ai_assistant", "continue_learning", "recent_announcements"]
+    assert keys == [
+        "welcome",
+        "ai_assistant",
+        "continue_learning",
+        "recent_announcements",
+        "motivational_quotes",
+    ]
 
 
 def test_admin_disabling_a_section_hides_it_for_that_role(admin_client, student_client):

@@ -23,7 +23,7 @@ from app.models.course import (  # noqa: F401
     LessonProgress,
     Module,
 )
-from app.models.dashboard import DashboardSection, RoleDashboardSection  # noqa: F401
+from app.models.dashboard import DashboardMessage, DashboardSection, RoleDashboardSection  # noqa: F401
 from app.models.guardian import GuardianRelationship, GuardianRelationshipStatus  # noqa: F401
 from app.models.language import Language  # noqa: F401
 from app.models.location import District, School, State  # noqa: F401

@@ -1,12 +1,101 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { api, type AdminDashboardSection, type RoleDashboardSection } from "@/lib/api";
+import {
+  api,
+  ApiError,
+  type AdminDashboardSection,
+  type DashboardMessage,
+  type RoleDashboardSection,
+} from "@/lib/api";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 const ROLES = ["student", "parent", "mentor", "school_admin", "admin"];
+
+function MotivationalQuotesManager() {
+  const [messages, setMessages] = useState<DashboardMessage[]>([]);
+  const [text, setText] = useState("");
+  const [attribution, setAttribution] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  function load() {
+    api.adminDashboardMessages().then(setMessages).catch(() => setMessages([]));
+  }
+  useEffect(load, []);
+
+  async function add() {
+    setError(null);
+    try {
+      await api.adminCreateDashboardMessage({
+        message: text,
+        attribution: attribution || undefined,
+        display_order: messages.length,
+      });
+      setText("");
+      setAttribution("");
+      load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Something went wrong.");
+    }
+  }
+
+  async function toggleActive(m: DashboardMessage) {
+    await api.adminUpdateDashboardMessage(m.id, { active: !m.active });
+    load();
+  }
+
+  async function remove(id: string) {
+    await api.adminDeleteDashboardMessage(id);
+    load();
+  }
+
+  return (
+    <Card className="mt-4">
+      <p className="font-medium text-ink">Motivational Quotes</p>
+      <p className="mt-1 text-xs text-muted">
+        The actual content shown in the &quot;Motivational Quotes&quot; box below (on by default
+        for every role) — write, retire, or remove messages here. Only active ones show.
+      </p>
+      <div className="mt-3 space-y-2">
+        <Input value={text} onChange={(e) => setText(e.target.value)} placeholder="Quote / message" />
+        <Input
+          value={attribution}
+          onChange={(e) => setAttribution(e.target.value)}
+          placeholder="Attribution (optional)"
+        />
+        {error && <p className="text-sm text-danger">{error}</p>}
+        <Button disabled={!text} onClick={add}>
+          Add
+        </Button>
+      </div>
+      <div className="mt-4 space-y-2">
+        {messages.map((m) => (
+          <div
+            key={m.id}
+            className="flex items-center justify-between rounded-md border border-border p-2"
+          >
+            <div>
+              <p className={`text-sm ${m.active ? "text-ink" : "text-muted line-through"}`}>
+                {m.message}
+              </p>
+              {m.attribution && <p className="text-xs text-muted">— {m.attribution}</p>}
+            </div>
+            <div className="flex shrink-0 gap-2">
+              <Button variant="secondary" onClick={() => toggleActive(m)}>
+                {m.active ? "Deactivate" : "Activate"}
+              </Button>
+              <Button variant="secondary" onClick={() => remove(m.id)}>
+                Delete
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
 
 export default function AdminDashboardSectionsPage() {
   const [sections, setSections] = useState<AdminDashboardSection[]>([]);
@@ -37,8 +126,12 @@ export default function AdminDashboardSectionsPage() {
       <h1 className="font-display text-xl font-medium text-ink">Dashboard sections</h1>
       <p className="mt-1 text-sm text-muted">
         Enable/disable and order each section per role. A role with no row for a section never
-        sees it.
+        sees it. Each row below is a fixed widget type — this is where you control whether it
+        shows, to whom, and in what order; the Motivational Quotes box is the one exception where
+        you also manage its actual text content, directly below.
       </p>
+
+      <MotivationalQuotesManager />
 
       <div className="mt-4 space-y-4">
         {sections.map((section) => {

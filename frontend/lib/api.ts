@@ -443,6 +443,14 @@ export interface AdminDashboardSection {
   default_config: Record<string, unknown> | null;
 }
 
+export interface DashboardMessage {
+  id: string;
+  message: string;
+  attribution: string | null;
+  display_order: number;
+  active: boolean;
+}
+
 export interface RoleDashboardSection {
   id: string;
   dashboard_section_id: string;
@@ -830,4 +838,31 @@ export const api = {
       method: "PUT",
       body: JSON.stringify(payload),
     }),
+  dashboardMessages: () => request<DashboardMessage[]>("/dashboard-messages"),
+  adminDashboardMessages: () => request<DashboardMessage[]>("/admin/dashboard-messages"),
+  adminCreateDashboardMessage: (payload: {
+    message: string;
+    attribution?: string;
+    display_order?: number;
+    active?: boolean;
+  }) =>
+    request<DashboardMessage>("/admin/dashboard-messages", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  adminUpdateDashboardMessage: (
+    id: string,
+    payload: Partial<{
+      message: string;
+      attribution: string;
+      display_order: number;
+      active: boolean;
+    }>
+  ) =>
+    request<DashboardMessage>(`/admin/dashboard-messages/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+  adminDeleteDashboardMessage: (id: string) =>
+    request<void>(`/admin/dashboard-messages/${id}`, { method: "DELETE" }),
 };

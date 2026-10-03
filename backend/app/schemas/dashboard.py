@@ -48,6 +48,30 @@ class RoleDashboardSectionRead(BaseModel):
     config_override: dict | None
 
 
+class DashboardMessageRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    message: str
+    attribution: str | None
+    display_order: int
+    active: bool
+
+
+class DashboardMessageCreate(BaseModel):
+    message: str
+    attribution: str | None = None
+    display_order: int = 0
+    active: bool = True
+
+
+class DashboardMessageUpdate(BaseModel):
+    message: str | None = None
+    attribution: str | None = None
+    display_order: int | None = None
+    active: bool | None = None
+
+
 class ResolvedDashboardSection(BaseModel):
     """What the frontend section registry actually consumes: one entry
     per section this user's role can see, already merged and ordered."""

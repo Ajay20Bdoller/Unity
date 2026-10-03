@@ -3,6 +3,7 @@ import { WelcomeSummary } from "./sections/welcome-summary";
 import { AIAssistantCard } from "./sections/ai-assistant-card";
 import { ContinueLearningCard } from "./sections/continue-learning-card";
 import { RecentAnnouncementsCard } from "./sections/recent-announcements-card";
+import { MotivationalQuotesCard } from "./sections/motivational-quotes-card";
 
 /**
  * The backend's `dashboard_sections.component_key` picks an entry here.
@@ -16,4 +17,5 @@ export const SECTION_REGISTRY: Record<string, ComponentType> = {
   ai_assistant_card: AIAssistantCard,
   continue_learning_card: ContinueLearningCard,
   recent_announcements_card: RecentAnnouncementsCard,
+  motivational_quotes_card: MotivationalQuotesCard,
 };

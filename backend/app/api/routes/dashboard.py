@@ -5,9 +5,12 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, require_admin
 from app.db.session import get_db
-from app.models.dashboard import DashboardSection, RoleDashboardSection
+from app.models.dashboard import DashboardMessage, DashboardSection, RoleDashboardSection
 from app.models.user import User
 from app.schemas.dashboard import (
+    DashboardMessageCreate,
+    DashboardMessageRead,
+    DashboardMessageUpdate,
     DashboardSectionCreate,
     DashboardSectionRead,
     DashboardSectionUpdate,
@@ -137,3 +140,75 @@ def upsert_section_role(
     db.commit()
     db.refresh(row)
     return row
+
+
+# --- dashboard messages (motivational_quotes_card content) ---
+
+
+@router.get("/dashboard-messages", response_model=list[DashboardMessageRead])
+def list_dashboard_messages(
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+) -> list[DashboardMessage]:
+    """Any logged-in user -- this is the content the motivational_quotes_card
+    section displays, and reaching this endpoint already implies a
+    dashboard section gated it. Only active messages, in order."""
+    return (
+        db.query(DashboardMessage)
+        .filter(DashboardMessage.active.is_(True))
+        .order_by(DashboardMessage.display_order)
+        .all()
+    )
+
+
+message_admin_router = APIRouter(prefix="/admin/dashboard-messages", tags=["admin"])
+
+
+@message_admin_router.get("", response_model=list[DashboardMessageRead])
+def admin_list_dashboard_messages(
+    current_user: User = Depends(require_admin), db: Session = Depends(get_db)
+) -> list[DashboardMessage]:
+    return db.query(DashboardMessage).order_by(DashboardMessage.display_order).all()
+
+
+@message_admin_router.post("", response_model=DashboardMessageRead, status_code=201)
+def create_dashboard_message(
+    payload: DashboardMessageCreate,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> DashboardMessage:
+    message = DashboardMessage(**payload.model_dump())
+    db.add(message)
+    db.commit()
+    db.refresh(message)
+    return message
+
+
+@message_admin_router.patch("/{message_id}", response_model=DashboardMessageRead)
+def update_dashboard_message(
+    message_id: uuid.UUID,
+    payload: DashboardMessageUpdate,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> DashboardMessage:
+    message = db.get(DashboardMessage, message_id)
+    if not message:
+        raise HTTPException(status_code=404, detail="Message not found")
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(message, field, value)
+    db.add(message)
+    db.commit()
+    db.refresh(message)
+    return message
+
+
+@message_admin_router.delete("/{message_id}", status_code=204)
+def delete_dashboard_message(
+    message_id: uuid.UUID,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> None:
+    message = db.get(DashboardMessage, message_id)
+    if not message:
+        raise HTTPException(status_code=404, detail="Message not found")
+    db.delete(message)
+    db.commit()

@@ -33,6 +33,28 @@ class DashboardSection(Base):
     )
 
 
+class DashboardMessage(Base):
+    """Admin-authored content shown inside the motivational_quotes_card
+    dashboard section (component_key = 'motivational_quotes_card').
+    Unlike DashboardSection (which only toggles/orders fixed, code-
+    defined widgets), this is actual text content the admin writes and
+    edits directly -- a quote, a short message, anything meant to show
+    in a rounded card on the dashboard. Whether this section shows at
+    all, and to which roles, is still controlled the normal way via
+    role_dashboard_sections; this only controls what it says."""
+
+    __tablename__ = "dashboard_messages"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    message: Mapped[str] = mapped_column(String(500), nullable=False)
+    attribution: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    display_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 class RoleDashboardSection(Base):
     """Per-role visibility/ordering/config for a section. Absence of a
     row for a (section, role) pair means "not shown to that role" —
