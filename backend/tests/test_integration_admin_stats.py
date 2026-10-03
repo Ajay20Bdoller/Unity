@@ -5,7 +5,7 @@ def test_admin_stats_reflects_real_counts(admin_client, student_client):
     assert stats["users_by_role"]["student"] >= 1
     assert stats["users_by_role"]["admin"] >= 1
     assert stats["total_careers"] == 16  # seeded careers (4 original + 12 added later)
-    assert stats["total_courses"] == 3  # seeded courses (1 original + 2 added later)
+    assert stats["total_courses"] == 15  # seeded courses (1 original + 2 + 12 added later)
     assert any(u["full_name"] == "Role Matrix Student" for u in stats["recent_users"])
 
 
