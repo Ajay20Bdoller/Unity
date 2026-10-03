@@ -94,10 +94,10 @@ export default function AboutUsPage() {
       <main className="mx-auto max-w-3xl px-6 py-16 sm:py-24">
         <section className="max-w-xl">
           <h1 className="font-display text-4xl font-medium leading-[1.1] tracking-tight text-ink sm:text-5xl">
-            The people building Unity
+            The people building CareerYog
           </h1>
           <p className="mt-5 text-lg leading-relaxed text-muted">
-            Unity started from a simple observation: most students never get shown the full map
+            CareerYog started from a simple observation: most students never get shown the full map
             of what they could become. This is who&apos;s working on changing that.
           </p>
         </section>

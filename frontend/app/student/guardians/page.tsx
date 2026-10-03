@@ -88,7 +88,7 @@ export default function StudentGuardiansPage() {
           </form>
           {error && <p className="mt-2 text-sm text-danger">{error}</p>}
           <p className="mt-2 text-xs text-muted">
-            Your parent needs to already have a Unity account, registered as a parent, with this
+            Your parent needs to already have a CareerYog account, registered as a parent, with this
             exact email.
           </p>
         </Card>

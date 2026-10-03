@@ -1,6 +1,6 @@
 {
   "nav": {
-    "brand": "Unity",
+    "brand": "CareerYog",
     "careers": "Careers",
     "courses": "Courses",
     "assessment": "Assessment",
@@ -22,7 +22,7 @@
   },
   "home": {
     "heroTitle": "A career companion for students who haven’t been shown the map yet.",
-    "heroSubtitle": "Unity helps school students discover careers, understand what they involve, and learn the skills to get there — starting wherever they are, in the language they’re comfortable in.",
+    "heroSubtitle": "CareerYog helps school students discover careers, understand what they involve, and learn the skills to get there — starting wherever they are, in the language they’re comfortable in.",
     "startExploring": "Start exploring",
     "browseCareersFirst": "Browse careers first",
     "step1Title": "Discover",
@@ -43,13 +43,13 @@
     "featuredCareersTitle": "Careers to explore",
     "featuredCareersSubtitle": "A few starting points — browse the full list for more.",
     "viewAllCareers": "View all careers",
-    "whyTitle": "What Unity gives you",
+    "whyTitle": "What CareerYog gives you",
     "why1Title": "Ask anything",
     "why1Detail": "An AI assistant that answers career questions in plain language, any time.",
     "why2Title": "Real mentors",
     "why2Detail": "Talk to people already working in the field, with your parent's consent.",
     "why3Title": "Your language",
-    "why3Detail": "Use Unity in Hindi, Bengali, Telugu, Punjabi, or English.",
+    "why3Detail": "Use CareerYog in Hindi, Bengali, Telugu, Punjabi, or English.",
     "why4Title": "Free to learn",
     "why4Detail": "Courses and skills, at no cost, at your own pace."
   },

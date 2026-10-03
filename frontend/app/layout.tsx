@@ -20,7 +20,7 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "Unity — Career Guidance Platform",
+  title: "CareerYog — Career Guidance Platform",
   description: "A personal career companion for students.",
 };
 
