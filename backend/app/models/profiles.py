@@ -49,7 +49,7 @@ class StudentProfile(Base):
     parent_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     parent_relation: Mapped[str | None] = mapped_column(String(50), nullable=True)
     gender: Mapped[str | None] = mapped_column(String(20), nullable=True)
-    profile_photo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    profile_photo_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
@@ -83,7 +83,7 @@ class MentorProfile(Base):
     date_of_birth: Mapped[date | None] = mapped_column(Date, nullable=True)
     bio: Mapped[str | None] = mapped_column(Text, nullable=True)
     availability_note: Mapped[str | None] = mapped_column(String(300), nullable=True)
-    photo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    photo_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     # A mentor is invisible to students (not returned by GET /mentors,
     # and can't receive requests even by direct API call — see
     # mentorship.py) until an admin approves them. Registering does not

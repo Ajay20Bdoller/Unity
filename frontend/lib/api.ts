@@ -517,7 +517,34 @@ export interface TeamMember {
   display_order: number;
 }
 
+async function uploadImage(file: File): Promise<string> {
+  const form = new FormData();
+  form.append("file", file);
+  // Deliberately not using request() here: FormData needs the browser
+  // to set its own multipart Content-Type (with a boundary parameter
+  // specific to this request) -- request()'s hardcoded 'application/
+  // json' would make this request unreadable by the server.
+  const res = await fetch(`${API_URL}/uploads/image`, {
+    method: "POST",
+    credentials: "include",
+    body: form,
+  });
+  if (!res.ok) {
+    let detail = res.statusText;
+    try {
+      const body = await res.json();
+      detail = body.detail ?? detail;
+    } catch {
+      // no JSON body
+    }
+    throw new ApiError(res.status, detail);
+  }
+  const data = await res.json();
+  return data.url as string;
+}
+
 export const api = {
+  uploadImage,
   register: (input: RegisterInput) =>
     request<User>("/auth/register", {
       method: "POST",

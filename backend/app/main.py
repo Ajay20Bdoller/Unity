@@ -21,6 +21,7 @@ from app.api.routes import (
     schools,
     students,
     team,
+    uploads,
     users,
 )
 from app.core.config import get_settings
@@ -83,6 +84,7 @@ app.include_router(announcements.admin_router)
 app.include_router(languages.router)
 app.include_router(schools.router)
 app.include_router(locations.router)
+app.include_router(uploads.router)
 app.include_router(team.router)
 app.include_router(team.admin_router)
 app.include_router(admin_users.router)

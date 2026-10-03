@@ -5,6 +5,7 @@ import { api, ApiError, type TeamMember } from "@/lib/api";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PhotoUploadField } from "@/components/ui/photo-upload-field";
 
 const emptyForm = {
   full_name: "",
@@ -91,10 +92,9 @@ export default function AdminTeamPage() {
             rows={3}
             className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-ink"
           />
-          <Input
+          <PhotoUploadField
             value={form.photo_url}
-            onChange={(e) => setForm({ ...form, photo_url: e.target.value })}
-            placeholder="Photo URL (optional)"
+            onChange={(url) => setForm({ ...form, photo_url: url })}
           />
           <Input
             value={form.linkedin_url}

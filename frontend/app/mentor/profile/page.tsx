@@ -12,7 +12,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SiteNav } from "@/components/site-nav";
-import { toDirectImageUrl } from "@/lib/image-url";
+import { PhotoUploadField } from "@/components/ui/photo-upload-field";
 
 export default function MentorProfilePage() {
   const { user, loading } = useAuth();
@@ -104,21 +104,10 @@ export default function MentorProfilePage() {
         </p>
 
         <Card className="mt-6">
-          {photoUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={toDirectImageUrl(photoUrl)}
-              alt=""
-              className="mb-3 h-20 w-20 rounded-full border border-border object-cover"
-            />
-          )}
-          <label className="text-sm font-medium text-ink">Photo URL</label>
-          <Input
-            value={photoUrl}
-            onChange={(e) => setPhotoUrl(e.target.value)}
-            placeholder="https://..."
-            className="mt-1"
-          />
+          <label className="text-sm font-medium text-ink">Photo</label>
+          <div className="mt-1">
+            <PhotoUploadField value={photoUrl} onChange={setPhotoUrl} />
+          </div>
 
           <label className="mt-4 block text-sm font-medium text-ink">Bio</label>
           <textarea
