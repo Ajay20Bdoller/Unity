@@ -12,6 +12,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SiteNav } from "@/components/site-nav";
+import { toDirectImageUrl } from "@/lib/image-url";
 
 export default function MentorProfilePage() {
   const { user, loading } = useAuth();
@@ -97,7 +98,7 @@ export default function MentorProfilePage() {
           {photoUrl && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={photoUrl}
+              src={toDirectImageUrl(photoUrl)}
               alt=""
               className="mb-3 h-20 w-20 rounded-full border border-border object-cover"
             />

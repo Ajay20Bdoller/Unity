@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { api, type TeamMember } from "@/lib/api";
 import { SiteNav } from "@/components/site-nav";
+import { toDirectImageUrl } from "@/lib/image-url";
 
 function Initial({ name }: { name: string }) {
   return (
@@ -18,7 +19,7 @@ function FeaturedProfile({ member }: { member: TeamMember }) {
       <div className="aspect-square w-full overflow-hidden rounded-2xl border border-border">
         {member.photo_url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={member.photo_url} alt={member.full_name} className="h-full w-full object-cover" />
+          <img src={toDirectImageUrl(member.photo_url)} alt={member.full_name} className="h-full w-full object-cover" />
         ) : (
           <Initial name={member.full_name} />
         )}
@@ -54,7 +55,7 @@ function TeamGridCard({ member }: { member: TeamMember }) {
       <div className="h-16 w-16 overflow-hidden rounded-full border border-border">
         {member.photo_url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={member.photo_url} alt={member.full_name} className="h-full w-full object-cover" />
+          <img src={toDirectImageUrl(member.photo_url)} alt={member.full_name} className="h-full w-full object-cover" />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-primary/15">
             <span className="font-display text-xl text-primary">{member.full_name.charAt(0)}</span>

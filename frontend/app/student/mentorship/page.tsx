@@ -13,6 +13,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SiteNav } from "@/components/site-nav";
+import { toDirectImageUrl } from "@/lib/image-url";
 
 export default function StudentMentorshipPage() {
   const { user, loading } = useAuth();
@@ -102,7 +103,7 @@ export default function StudentMentorshipPage() {
                     {mentor.photo_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={mentor.photo_url}
+                        src={toDirectImageUrl(mentor.photo_url)}
                         alt=""
                         className="h-full w-full object-cover"
                       />
